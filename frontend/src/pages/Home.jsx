@@ -1,4 +1,3 @@
-// src/pages/Home.jsx
 import React, { useEffect, useRef, useState, useContext } from 'react'
 import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
@@ -64,13 +63,23 @@ const Home = () => {
     }
 
     const onRideConfirmed = (rideData) => {
+      console.log('socket -> ride-confirmed payload:', rideData);
       setVehicleFound(false)
       setWaitingForDriver(true)
+
+      // if payload doesn't contain otp, warn (server should send otp)
+      if (!rideData?.otp) {
+        console.warn('ride-confirmed missing otp in payload. Server might not be sending otp with event.');
+      }
+
+      // prefer server payload (it usually contains populated data incl otp)
       setRide(rideData)
     }
 
     const onRideStarted = (rideData) => {
+      console.log('socket -> ride-started payload:', rideData);
       setWaitingForDriver(false)
+      // use returned rideData for navigation (safer than stale state)
       navigate('/riding', { state: { ride: rideData } })
     }
 
@@ -82,6 +91,11 @@ const Home = () => {
       socket.off('ride-started', onRideStarted)
     }
   }, [user, socket, navigate])
+
+  // debug: log ride state whenever it changes
+  useEffect(() => {
+    console.log('Local ride state updated:', ride);
+  }, [ride]);
 
   const handlePickupChange = async (e) => {
     setPickup(e.target.value)
@@ -182,10 +196,24 @@ const Home = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       })
 
+      // Debug: log raw server response
+      console.log('/rides/create response:', response?.status, response?.data);
+
       // server will emit socket events for ride assignment — no local handling required here
       // but store the created ride locally so ConfirmRide's dummy payment can use ride._id
       if (response && response.data) {
+        // If server returned otp in create response, it will be present here
+        if (!response.data.otp) {
+          // log helpful warning so you can check server behavior
+          console.warn('createRide: response does not contain otp. Server may be omitting otp from create response.');
+        } else {
+          console.log('createRide: OTP is present in server response (dev mode):', response.data.otp);
+        }
+
         setRide(response.data)
+        // open waiting panel only if server indicates accepted OR you wait for socket
+        // but keep confirm panel closed since create was successful
+        setConfirmRidePanel(false)
         return response.data
       }
     } catch (err) {
@@ -269,6 +297,7 @@ const Home = () => {
           ride={ride}
           setConfirmRidePanel={setConfirmRidePanel}
           setVehicleFound={setVehicleFound}
+          setRide={setRide} // pass setter so child can update ride if needed
         />
       </div>
 

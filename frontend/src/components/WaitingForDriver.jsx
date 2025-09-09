@@ -1,33 +1,42 @@
 // src/components/WaitingForDriver.jsx
-import React from 'react'
+import React, { useEffect, useState } from 'react';
 
 const WaitingForDriver = (props) => {
-  const ride = props.ride ?? {}
+  const ride = props.ride ?? {};
+  const [localOtp, setLocalOtp] = useState('—');
+
+  // Sync localOtp whenever ride changes (so OTP appears reliably)
+  useEffect(() => {
+    // debug: see incoming ride object
+    console.log('WaitingForDriver - incoming ride:', props.ride);
+
+    const newOtp = props?.ride?.otp ?? props?.ride?.otpCode ?? '—';
+    setLocalOtp(newOtp);
+  }, [props.ride]);
 
   // Safe getters with fallbacks for different backend shapes
-  const captain = ride.captain ?? {}
-  const fullnameObj = captain.fullname ?? captain.name ?? {}
+  const captain = ride.captain ?? {};
+  const fullnameObj = captain.fullname ?? captain.name ?? {};
   const captainName = typeof fullnameObj === 'object'
     ? `${fullnameObj.firstname ?? fullnameObj.firstName ?? ''} ${fullnameObj.lastname ?? fullnameObj.lastName ?? ''}`.trim()
-    : String(fullnameObj || 'Captain')
+    : String(fullnameObj || 'Captain');
 
-  const vehiclePlate = captain?.vehicle?.plate ?? captain?.vehiclePlate ?? 'N/A'
-  const vehicleModel = captain?.vehicle?.model ?? 'Vehicle'
-  const otp = ride?.otp ?? ride?.otpCode ?? '—'
+  const vehiclePlate = captain?.vehicle?.plate ?? captain?.vehiclePlate ?? 'N/A';
+  const vehicleModel = captain?.vehicle?.model ?? 'Vehicle';
+  const otp = localOtp;
   const fareVal = (() => {
-    if (!ride?.fare) return '—'
-    if (typeof ride.fare === 'object') return ride.fare.total ?? ride.fare.amount ?? JSON.stringify(ride.fare)
-    return ride.fare
-  })()
-  const paymentMethod = ride?.paymentMethod ?? ride?.payment ?? 'Cash'
+    if (!ride?.fare) return '—';
+    if (typeof ride.fare === 'object') return ride.fare.total ?? ride.fare.amount ?? JSON.stringify(ride.fare);
+    return ride.fare;
+  })();
+  const paymentMethod = ride?.paymentMethod ?? ride?.payment ?? 'Cash';
 
-  const pickup = ride?.pickup ?? 'Unknown pickup'
-  const destination = ride?.destination ?? 'Unknown destination'
+  const pickup = ride?.pickup ?? 'Unknown pickup';
+  const destination = ride?.destination ?? 'Unknown destination';
 
   return (
     <div className="p-3">
       <h5 className='p-1 text-center w-[93%] absolute top-0' onClick={() => {
-        // fix: call the setter passed from parent
         if (typeof props.setWaitingForDriver === 'function') props.setWaitingForDriver(false)
       }}>
         <i className="text-3xl text-gray-400 ri-arrow-down-wide-line"></i>
@@ -82,4 +91,4 @@ const WaitingForDriver = (props) => {
   )
 }
 
-export default WaitingForDriver
+export default WaitingForDriver;

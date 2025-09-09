@@ -14,6 +14,12 @@ const ConfirmRidePopUp = (props) => {
   // Debug: log ride object so you can inspect phone, fare, etc.
   useEffect(() => {
     console.log('ConfirmRidePopUp props.ride:', props.ride);
+
+    // Sync OTP from incoming ride to local state (helps autopopulate)
+    const incomingOtp = props?.ride?.otp ?? props?.ride?.otpCode ?? '';
+    if (incomingOtp) {
+      setOtp(String(incomingOtp));
+    }
   }, [props.ride]);
 
   const submitHander = async (e) => {
@@ -23,6 +29,7 @@ const ConfirmRidePopUp = (props) => {
       return;
     }
     setStartLoading(true);
+    setMessage(null);
     try {
       const token = localStorage.getItem('token');
       const response = await axios.get(`${API_BASE}/rides/start-ride`, {
@@ -36,13 +43,23 @@ const ConfirmRidePopUp = (props) => {
       });
 
       // successful start
-      if (response?.status === 200 && (response.data?.success ?? true)) {
+      if (response?.status === 200 && (response.data ?? false)) {
         setMessage('Ride started successfully');
+
+        // If backend returns the updated ride object, prefer that for navigation/state
+        const returnedRide = response.data;
+
         props.setConfirmRidePopupPanel?.(false);
         props.setRidePopupPanel?.(false);
-        navigate('/captain-riding', { state: { ride: props.ride } });
+
+        // If parent has a setRide function, update it with returnedRide
+        if (typeof props.setRide === 'function') {
+          props.setRide(returnedRide);
+        }
+
+        // navigate with the updated ride if available
+        navigate('/captain-riding', { state: { ride: returnedRide ?? props.ride } });
       } else {
-        // backend might send message explaining why OTP invalid
         setMessage(response?.data?.message || 'Could not start ride — check OTP');
       }
     } catch (err) {
@@ -73,16 +90,12 @@ const ConfirmRidePopUp = (props) => {
       );
 
       console.log('Resend OTP response:', res?.data);
-      // common patterns:
-      // { success: true, message: 'OTP sent' }
-      // or { success: true, otp: '1234' } in dev/testing
       if (res?.data) {
         setMessage(res.data.message ?? 'OTP requested — check phone');
+
         // show OTP in dev mode only (safer for local testing)
         if (import.meta.env.DEV && res.data?.otp) {
-          // display OTP for debugging
           setMessage((prev) => `${prev} (dev OTP: ${res.data.otp})`);
-          // optionally autopopulate OTP in dev:
           setOtp(res.data.otp);
         }
       } else {
@@ -96,7 +109,6 @@ const ConfirmRidePopUp = (props) => {
     }
   };
 
-  // Safe display helpers
   const riderName = props.ride?.user?.fullname?.firstname ?? 'Rider';
   const safeFare = (() => {
     const f = props.ride?.fare ?? props.fare;

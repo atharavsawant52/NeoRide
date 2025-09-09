@@ -1,4 +1,3 @@
-// Backend/models/ride.model.js
 const mongoose = require('mongoose');
 
 const fareSchema = new mongoose.Schema({
