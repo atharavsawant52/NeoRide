@@ -1,15 +1,26 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import dayjs from 'dayjs' // optional - nicer timestamp formatting; install if needed
+import { SocketContext } from '../context/SocketContext'
+import { ToastContainer, toast } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+import dayjs from 'dayjs' // optional - install if you want nicer formatting
 
 const FinishRide = (props) => {
   const navigate = useNavigate()
+  const { socket } = useContext(SocketContext)
   const ride = props?.ride ?? null
   const paymentInfo = props?.paymentInfo ?? null
 
   const [acknowledged, setAcknowledged] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [ackLoading, setAckLoading] = useState(false)
+
+  // Safe API base (Vite or default)
+  const API_BASE =
+    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BASE_URL) ||
+    (typeof window !== 'undefined' && window.__API_BASE__) ||
+    'http://localhost:3000'
 
   // Safe helper to format fare
   const formatFare = (f) => {
@@ -18,9 +29,63 @@ const FinishRide = (props) => {
     return f
   }
 
+  // Format timestamp nicely
+  const formatTime = (ts) => {
+    try {
+      if (!ts) return ''
+      return dayjs ? dayjs(ts).format('DD MMM, HH:mm') : new Date(ts).toLocaleString()
+    } catch {
+      return ts
+    }
+  }
+
+  // Acknowledge payment: emit socket + optional server call
+  const acknowledgePayment = async () => {
+    if (!paymentInfo) return
+    try {
+      setAckLoading(true)
+      // 1) emit socket event so server (and maybe passenger) knows captain acknowledged
+      if (socket) {
+        socket.emit('payment-acknowledged', {
+          rideId: ride?._id,
+          paymentId: paymentInfo.paymentId,
+          captainSocketId: socket.id
+        })
+      }
+
+      // 2) optional: inform backend to persist ack (endpoint: POST /rides/ack-payment)
+      // If you don't have this endpoint, the try/catch will fail silently and we still proceed.
+      try {
+        const token = localStorage.getItem('token') || ''
+        await axios.post(
+          `${API_BASE.replace(/\/$/, '')}/rides/ack-payment`,
+          {
+            rideId: ride?._id,
+            paymentId: paymentInfo.paymentId
+          },
+          {
+            headers: { Authorization: token ? `Bearer ${token}` : '' },
+            timeout: 8000
+          }
+        )
+      } catch (err) {
+        // it's optional; log but don't block ack UX
+        console.warn('ack persist API failed (optional):', err?.response?.data || err.message)
+      }
+
+      setAcknowledged(true)
+      toast.success('Payment acknowledged', { autoClose: 2500 })
+    } catch (err) {
+      console.error('acknowledgePayment error', err)
+      toast.error('Could not acknowledge payment', { autoClose: 3500 })
+    } finally {
+      setAckLoading(false)
+    }
+  }
+
   async function endRide() {
     if (!ride?._id) {
-      alert('Ride not available')
+      toast.error('Ride not available')
       return
     }
 
@@ -38,26 +103,29 @@ const FinishRide = (props) => {
         }
       }
 
+      const token = localStorage.getItem('token') || ''
       const response = await axios.post(
-        `${import.meta.env.VITE_BASE_URL}/rides/end-ride`,
+        `${API_BASE.replace(/\/$/, '')}/rides/end-ride`,
         body,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`
-          }
+            Authorization: `Bearer ${token}`
+          },
+          timeout: 10000
         }
       )
 
       if (response.status === 200) {
         props.setFinishRidePanel?.(false)
+        toast.success('Ride finished', { autoClose: 1200 })
         navigate('/captain-home')
       } else {
         console.warn('endRide unexpected response', response)
-        alert('Could not finish ride — check console')
+        toast.error('Could not finish ride — check console')
       }
     } catch (err) {
       console.error('endRide error:', err.response ?? err)
-      alert(err.response?.data?.message || 'Finish ride failed — see console')
+      toast.error(err.response?.data?.message || 'Finish ride failed — see console', { autoClose: 4000 })
     } finally {
       setLoading(false)
     }
@@ -67,6 +135,7 @@ const FinishRide = (props) => {
   if (!ride) {
     return (
       <div>
+        <ToastContainer />
         <h5 className='p-1 text-center w-[93%] absolute top-0' onClick={() => props.setFinishRidePanel?.(false)}>
           <i className="text-3xl text-gray-200 ri-arrow-down-wide-line"></i>
         </h5>
@@ -78,19 +147,9 @@ const FinishRide = (props) => {
     )
   }
 
-  // format timestamp nicely (if dayjs installed)
-  const formatTime = (ts) => {
-    try {
-      if (!ts) return ''
-      if (dayjs) return dayjs(ts).format('DD MMM, HH:mm')
-      return new Date(ts).toLocaleString()
-    } catch {
-      return ts
-    }
-  }
-
   return (
     <div>
+      <ToastContainer />
       <h5 className='p-1 text-center w-[93%] absolute top-0' onClick={() => { props.setFinishRidePanel?.(false) }}>
         <i className="text-3xl text-gray-200 ri-arrow-down-wide-line"></i>
       </h5>
@@ -118,10 +177,11 @@ const FinishRide = (props) => {
             <div className='flex flex-col items-end gap-2'>
               {!acknowledged ? (
                 <button
-                  onClick={() => setAcknowledged(true)}
+                  onClick={acknowledgePayment}
+                  disabled={ackLoading}
                   className='px-3 py-1 bg-green-600 text-white rounded-md text-sm'
                 >
-                  Acknowledge
+                  {ackLoading ? 'Acknowledging…' : 'Acknowledge'}
                 </button>
               ) : (
                 <span className='text-sm text-green-700 font-medium'>Acknowledged</span>

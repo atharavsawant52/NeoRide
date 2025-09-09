@@ -2,33 +2,39 @@ import React, { useEffect, useContext, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { SocketContext } from '../context/SocketContext'
 import LiveTracking from '../components/LiveTracking'
-import axios from 'axios'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import PaymentCard from '../components/PaymentCard' // new component
 
 const Riding = () => {
   const location = useLocation()
   const ride = location.state?.ride ?? null
   const { socket } = useContext(SocketContext)
   const navigate = useNavigate()
-  const [loadingPayment, setLoadingPayment] = useState(false)
   const [localRide, setLocalRide] = useState(ride)
 
   useEffect(() => {
     if (!socket) return;
     const handleRideEnded = () => navigate('/home')
     socket.on('ride-ended', handleRideEnded)
-    return () => socket.off('ride-ended', handleRideEnded)
+
+    // optional: listen for server ack of payment
+    const onPaymentAck = (ack) => {
+      if (ack?.ok) {
+        toast.success('Server acknowledged payment', { autoClose: 2000 })
+      } else if (ack) {
+        toast.error('Payment ack failed: ' + (ack.message || 'Unknown'))
+      }
+    }
+    socket.on('payment-ack', onPaymentAck)
+
+    return () => {
+      socket.off('ride-ended', handleRideEnded)
+      socket.off('payment-ack', onPaymentAck)
+    }
   }, [socket, navigate])
 
-  // ---------- SAFE API BASE ----------
-  // Prefers Vite env var VITE_BASE_URL, else fallback to localhost:3000 (your server)
-  const API_BASE =
-    (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BASE_URL) ||
-    (typeof window !== 'undefined' && window.__API_BASE__) || // optional global override
-    'http://localhost:3000'
-
-  // ---------- safeFare helper ----------
+  // safeFare helper (same as before)
   const safeFare = (f) => {
     if (f == null) return '—';
     if (typeof f === 'object') {
@@ -53,72 +59,16 @@ const Riding = () => {
     )
   }
 
-  // ---------- Payment handler (direct axios) ----------
-  const handleDummyPayment = async (method = 'cash') => {
-    try {
-      setLoadingPayment(true)
-
-      const amountVal = Number(safeFare(localRide?.fare ?? ride?.fare)) || 0
-      const token = localStorage.getItem('token') // adapt if auth stored elsewhere
-
-      // build url: use API_BASE (no trailing slash) + route
-      const url = `${API_BASE.replace(/\/$/, '')}/api/payment/dummy`
-
-      console.log('Calling dummy payment url:', url, { rideId: localRide?._id ?? ride._id, amountVal, method })
-
-      const { data } = await axios.post(
-        url,
-        {
-          rideId: localRide?._id ?? ride._id,
-          amount: amountVal,
-          method
-        },
-        {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : ''
-          },
-          timeout: 10000
-        }
-      )
-
-      if (data?.success) {
-        setLocalRide(data.ride)
-        toast.success(`Payment successful — ${data.paymentId}`, { position: 'top-right', autoClose: 3000 })
-
-        // emit socket so server can forward to captain
-        if (socket) {
-          socket.emit('payment-made', {
-            rideId: data.ride._id,
-            paymentId: data.paymentId,
-            amount: amountVal,
-            method
-          })
-        }
-
-        // optional: navigate away after small delay
-        // setTimeout(() => navigate('/home'), 1200)
-      } else {
-        toast.error('Payment failed: ' + (data?.message || 'Unknown'))
-      }
-    } catch (err) {
-      console.error('dummy payment error', err)
-      // Network error (server down / wrong port / CORS blocked)
-      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
-        toast.error('Network Error: Could not reach backend. Is server running on port 3000?', { autoClose: 5000 })
-      } else if (err.response) {
-        // backend responded with an error (401/400/500)
-        const msg = err.response.data?.message || `${err.response.status} ${err.response.statusText}`
-        toast.error('Server error: ' + msg, { autoClose: 5000 })
-      } else {
-        toast.error('Error: ' + (err.message || 'Unknown'), { autoClose: 5000 })
-      }
-    } finally {
-      setLoadingPayment(false)
-    }
-  }
-
   const captainFirstName = localRide?.captain?.fullname?.firstname ?? localRide?.captain?.fullname ?? 'Captain'
   const vehiclePlate = localRide?.captain?.vehicle?.plate ?? localRide?.captain?.vehiclePlate ?? 'N/A'
+
+  // onSuccess callback from PaymentCard
+  const handlePaymentSuccess = (data) => {
+    // data could be { success, paymentId, ride } from dummy route
+    if (data?.ride) setLocalRide(data.ride)
+    toast.success('Payment successful', { autoClose: 2000 })
+    // optionally navigate away: navigate('/home')
+  }
 
   return (
     <div className='h-screen'>
@@ -160,24 +110,16 @@ const Riding = () => {
               </div>
             </div>
           </div>
-        </div>
 
-        <div className='flex gap-2 mt-4'>
-          <button
-            onClick={() => handleDummyPayment('cash')}
-            disabled={loadingPayment}
-            className='flex-1 bg-green-600 text-white font-semibold p-2 rounded-lg'
-          >
-            {loadingPayment ? 'Processing…' : 'Pay by Cash (Dummy)'}
-          </button>
+          {/* PaymentCard component */}
+          <div className='w-full mt-6'>
+            <PaymentCard
+              ride={localRide ?? ride}
+              preferGateway='dummy' // switch to 'razorpay' if you want real gateway flow
+              onSuccess={handlePaymentSuccess}
+            />
+          </div>
 
-          <button
-            onClick={() => handleDummyPayment('online')}
-            disabled={loadingPayment}
-            className='flex-1 bg-blue-600 text-white font-semibold p-2 rounded-lg'
-          >
-            {loadingPayment ? 'Processing…' : 'Pay Online (Dummy)'}
-          </button>
         </div>
       </div>
     </div>
