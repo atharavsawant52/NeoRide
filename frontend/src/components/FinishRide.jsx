@@ -1,10 +1,15 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import dayjs from 'dayjs' // optional - nicer timestamp formatting; install if needed
 
 const FinishRide = (props) => {
   const navigate = useNavigate()
   const ride = props?.ride ?? null
+  const paymentInfo = props?.paymentInfo ?? null
+
+  const [acknowledged, setAcknowledged] = useState(false)
+  const [loading, setLoading] = useState(false)
 
   // Safe helper to format fare
   const formatFare = (f) => {
@@ -20,9 +25,22 @@ const FinishRide = (props) => {
     }
 
     try {
+      setLoading(true)
+
+      // prepare body; include paymentInfo if present so backend can store it or verify
+      const body = { rideId: ride._id }
+      if (paymentInfo) {
+        body.payment = {
+          paymentId: paymentInfo.paymentId,
+          amount: paymentInfo.amount,
+          method: paymentInfo.method,
+          timestamp: paymentInfo.timestamp || new Date().toISOString()
+        }
+      }
+
       const response = await axios.post(
         `${import.meta.env.VITE_BASE_URL}/rides/end-ride`,
-        { rideId: ride._id },
+        body,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -40,6 +58,8 @@ const FinishRide = (props) => {
     } catch (err) {
       console.error('endRide error:', err.response ?? err)
       alert(err.response?.data?.message || 'Finish ride failed — see console')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -58,6 +78,17 @@ const FinishRide = (props) => {
     )
   }
 
+  // format timestamp nicely (if dayjs installed)
+  const formatTime = (ts) => {
+    try {
+      if (!ts) return ''
+      if (dayjs) return dayjs(ts).format('DD MMM, HH:mm')
+      return new Date(ts).toLocaleString()
+    } catch {
+      return ts
+    }
+  }
+
   return (
     <div>
       <h5 className='p-1 text-center w-[93%] absolute top-0' onClick={() => { props.setFinishRidePanel?.(false) }}>
@@ -65,6 +96,40 @@ const FinishRide = (props) => {
       </h5>
 
       <h3 className='text-2xl font-semibold mb-5'>Finish this Ride</h3>
+
+      {/* --- PAYMENT INFO BANNER (if any) --- */}
+      {paymentInfo && (
+        <div className='mb-4 p-4 rounded-lg border border-green-200 bg-green-50'>
+          <div className='flex items-start justify-between'>
+            <div>
+              <h4 className='font-semibold text-green-800'>Payment received</h4>
+              <p className='text-sm text-gray-700 mt-1'>
+                Amount: <span className='font-medium'>₹{paymentInfo.amount ?? '—'}</span>
+                {' '} • Method: <span className='font-medium'>{paymentInfo.method ?? '—'}</span>
+              </p>
+              <p className='text-xs text-gray-500 mt-1'>
+                Payment ID: <span className='font-mono text-xs'>{paymentInfo.paymentId ?? '—'}</span>
+              </p>
+              {paymentInfo.timestamp && (
+                <p className='text-xs text-gray-400 mt-1'>At {formatTime(paymentInfo.timestamp)}</p>
+              )}
+            </div>
+
+            <div className='flex flex-col items-end gap-2'>
+              {!acknowledged ? (
+                <button
+                  onClick={() => setAcknowledged(true)}
+                  className='px-3 py-1 bg-green-600 text-white rounded-md text-sm'
+                >
+                  Acknowledge
+                </button>
+              ) : (
+                <span className='text-sm text-green-700 font-medium'>Acknowledged</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className='flex items-center justify-between p-4 border-2 border-yellow-400 rounded-lg mt-4'>
         <div className='flex items-center gap-3 '>
@@ -96,7 +161,7 @@ const FinishRide = (props) => {
             <i className="ri-currency-line"></i>
             <div>
               <h3 className='text-lg font-medium'>₹{formatFare(ride?.fare)}</h3>
-              <p className='text-sm -mt-1 text-gray-600'>Cash</p>
+              <p className='text-sm -mt-1 text-gray-600'>{ride?.paymentMethod ?? 'Cash'}</p>
             </div>
           </div>
         </div>
@@ -104,9 +169,10 @@ const FinishRide = (props) => {
         <div className='mt-10 w-full'>
           <button
             onClick={endRide}
+            disabled={loading}
             className='w-full mt-5 flex text-lg justify-center bg-green-600 text-white font-semibold p-3 rounded-lg'
           >
-            Finish Ride
+            {loading ? 'Finishing…' : 'Finish Ride'}
           </button>
         </div>
       </div>
