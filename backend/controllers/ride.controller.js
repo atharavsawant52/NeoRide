@@ -3,7 +3,9 @@ const { validationResult } = require('express-validator');
 const mapService = require('../services/maps.service');
 const { sendMessageToSocketId } = require('../socket');
 const rideModel = require('../models/ride.model');
+const captainModel = require('../models/captain.model'); // ✅ import captain model
 
+// ---------------------- CREATE RIDE ----------------------
 module.exports.createRide = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -13,27 +15,30 @@ module.exports.createRide = async (req, res) => {
     const { pickup, destination, vehicleType } = req.body;
 
     try {
-        // create ride (rideService should calculate fare and save it)
-        const ride = await rideService.createRide({ user: req.user._id, pickup, destination, vehicleType });
+        // create ride
+        const ride = await rideService.createRide({
+            user: req.user._id,
+            pickup,
+            destination,
+            vehicleType
+        });
 
         // Re-query to populate user and include otp explicitly
         const rideToReturn = await rideModel.findById(ride._id)
             .populate('user', 'fullname email socketId')
             .select('+otp');
 
-        // respond to client with populated ride including otp (dev/testing)
+        // respond immediately
         res.status(201).json(rideToReturn);
 
         // perform post-response tasks (notify captains)
         const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
-        const captainsInRadius = await mapService.getCaptainsInTheRadius(pickupCoordinates.ltd, pickupCoordinates.lng, 2);
+        const captainsInRadius = await mapService.getCaptainsInTheRadius(
+            pickupCoordinates.ltd,
+            pickupCoordinates.lng,
+            2
+        );
 
-        // ensure some fields exist
-        // (we keep otp in ride variable if further internal use required)
-        // ride.otp = ride.otp ?? "";
-
-        // notify all nearby captains (each captain gets new-ride event)
-        // We send rideWithoutOtp to captains (to avoid exposing user OTP to captains).
         const rideWithoutOtp = await rideModel.findById(ride._id)
             .populate('user', 'fullname email socketId');
 
@@ -54,6 +59,7 @@ module.exports.createRide = async (req, res) => {
     }
 };
 
+// ---------------------- GET FARE ----------------------
 module.exports.getFare = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -71,6 +77,7 @@ module.exports.getFare = async (req, res) => {
     }
 };
 
+// ---------------------- CONFIRM RIDE ----------------------
 module.exports.confirmRide = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -80,17 +87,14 @@ module.exports.confirmRide = async (req, res) => {
     const { rideId } = req.body;
 
     try {
-        // rideService.confirmRide updates status & captain and returns ride (it already selects +otp)
         const ride = await rideService.confirmRide({ rideId, captain: req.captain });
 
-        // After service updated the ride, fetch populated ride (include captain & user) AND include otp
         const populatedRide = await rideModel.findById(ride._id)
             .populate('captain', 'fullname vehicle socketId email')
             .populate('user', 'fullname email socketId')
             .select('+otp');
 
-        // emit to user (so frontend shows real captain info AND can display OTP if desired)
-        if (populatedRide && populatedRide.user && populatedRide.user.socketId) {
+        if (populatedRide?.user?.socketId) {
             sendMessageToSocketId(populatedRide.user.socketId, {
                 event: 'ride-confirmed',
                 data: populatedRide
@@ -104,6 +108,7 @@ module.exports.confirmRide = async (req, res) => {
     }
 };
 
+// ---------------------- START RIDE ----------------------
 module.exports.startRide = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -115,13 +120,12 @@ module.exports.startRide = async (req, res) => {
     try {
         const ride = await rideService.startRide({ rideId, otp, captain: req.captain });
 
-        // populate before emitting AND include otp so user side can display it if needed
         const populatedRide = await rideModel.findById(ride._id)
             .populate('captain', 'fullname vehicle socketId email')
             .populate('user', 'fullname email socketId')
             .select('+otp');
 
-        if (populatedRide && populatedRide.user && populatedRide.user.socketId) {
+        if (populatedRide?.user?.socketId) {
             sendMessageToSocketId(populatedRide.user.socketId, {
                 event: 'ride-started',
                 data: populatedRide
@@ -135,6 +139,7 @@ module.exports.startRide = async (req, res) => {
     }
 };
 
+// ---------------------- END RIDE ----------------------
 module.exports.endRide = async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -146,12 +151,21 @@ module.exports.endRide = async (req, res) => {
     try {
         const ride = await rideService.endRide({ rideId, captain: req.captain });
 
+        // ✅ Update captain stats
+        await captainModel.findByIdAndUpdate(req.captain._id, {
+            $inc: {
+                "stats.earnings": ride.fare.total || 0,
+                "stats.ridesCount": 1,
+                "stats.hoursWorked": ride.duration ? ride.duration / 3600 : 0
+            }
+        });
+
         const populatedRide = await rideModel.findById(ride._id)
-            .populate('captain', 'fullname vehicle socketId email')
+            .populate('captain', 'fullname vehicle socketId email stats')
             .populate('user', 'fullname email socketId')
             .select('+otp');
 
-        if (populatedRide && populatedRide.user && populatedRide.user.socketId) {
+        if (populatedRide?.user?.socketId) {
             sendMessageToSocketId(populatedRide.user.socketId, {
                 event: 'ride-ended',
                 data: populatedRide
