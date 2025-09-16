@@ -193,7 +193,7 @@ const FinishRide = (props) => {
 
       <div className='flex items-center justify-between p-4 border-2 border-yellow-400 rounded-lg mt-4'>
         <div className='flex items-center gap-3 '>
-          <img className='h-12 rounded-full object-cover w-12' src={ride?.user?.avatar ?? "https://i.pinimg.com/236x/af/26/28/af26280b0ca305be47df0b799ed1b12b.jpg"} alt="" />
+          <img className='h-12 rounded-full object-cover w-12' src={ride?.user?.profilePic ?? "https://i.pinimg.com/236x/af/26/28/af26280b0ca305be47df0b799ed1b12b.jpg"} alt="" />
           <h2 className='text-lg font-medium'>{ride?.user?.fullname?.firstname ?? ride?.user?.fullname ?? 'Rider'}</h2>
         </div>
         <h5 className='text-lg font-semibold'>2.2 KM</h5>

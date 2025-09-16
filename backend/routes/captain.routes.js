@@ -6,7 +6,9 @@ const authMiddleware = require('../middlewares/auth.middleware');
 const { getCaptainStats } = require('../controllers/captainStats.controller');
 
 
-router.post('/register', [
+const upload = require('../middlewares/upload');
+
+router.post('/register', upload.single('profilePic'), [
     body('email').isEmail().withMessage('Invalid Email'),
     body('fullname.firstname').isLength({ min: 3 }).withMessage('First name must be at least 3 characters long'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),

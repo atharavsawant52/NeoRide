@@ -19,33 +19,40 @@ const CaptainSignup = () => {
   const [ vehicleType, setVehicleType ] = useState('')
 
 
+  const [ profilePic, setProfilePic ] = useState(null)
+
   const { captain, setCaptain } = React.useContext(CaptainDataContext)
 
 
   const submitHandler = async (e) => {
     e.preventDefault()
-    const captainData = {
-      fullname: {
-        firstname: firstName,
-        lastname: lastName
-      },
-      email: email,
-      password: password,
-      vehicle: {
-        color: vehicleColor,
-        plate: vehiclePlate,
-        capacity: vehicleCapacity,
-        vehicleType: vehicleType
+
+    const formdata = new FormData()
+    formdata.append('fullname[firstname]', firstName)
+    formdata.append('fullname[lastname]', lastName)
+    formdata.append('email', email)
+    formdata.append('password', password)
+    formdata.append('vehicle[color]', vehicleColor)
+    formdata.append('vehicle[plate]', vehiclePlate)
+    formdata.append('vehicle[capacity]', parseInt(vehicleCapacity))
+    formdata.append('vehicle[vehicleType]', vehicleType)
+    formdata.append('profilePic', profilePic)
+
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/register`, formdata, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      })
+
+      if (response.status === 201) {
+        const data = response.data
+        setCaptain(data.captain)
+        localStorage.setItem('token', data.token)
+        navigate('/captain-home')
       }
-    }
-
-    const response = await axios.post(`${import.meta.env.VITE_BASE_URL}/captains/register`, captainData)
-
-    if (response.status === 201) {
-      const data = response.data
-      setCaptain(data.captain)
-      localStorage.setItem('token', data.token)
-      navigate('/captain-home')
+    } catch (error) {
+      console.error("Registration error:", error.response.data);
     }
 
     setEmail('')
@@ -56,6 +63,7 @@ const CaptainSignup = () => {
     setVehiclePlate('')
     setVehicleCapacity('')
     setVehicleType('')
+    setProfilePic(null)
 
   }
   return (
@@ -160,9 +168,18 @@ const CaptainSignup = () => {
               <option value="" disabled>Select Vehicle Type</option>
               <option value="car">Car</option>
               <option value="auto">Auto</option>
-              <option value="moto">Moto</option>
+              <option value="motorcycle">Moto</option>
             </select>
           </div>
+
+          <h3 className='text-lg font-medium mb-2'>Profile Picture</h3>
+          <input
+            className='bg-[#eeeeee] mb-7 rounded-lg px-4 py-2 border w-full text-lg placeholder:text-base'
+            type="file"
+            onChange={(e) => {
+              setProfilePic(e.target.files[ 0 ])
+            }}
+          />
 
           <button
             className='bg-[#111] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg placeholder:text-base'

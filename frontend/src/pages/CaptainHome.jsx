@@ -116,17 +116,7 @@ const CaptainHome = () => {
     }
   }
 
-  useGSAP(function () {
-    if (ridePopupPanel) {
-      gsap.to(ridePopupPanelRef.current, {
-        transform: 'translateY(0)'
-      })
-    } else {
-      gsap.to(ridePopupPanelRef.current, {
-        transform: 'translateY(100%)'
-      })
-    }
-  }, [ ridePopupPanel ])
+  
 
   useGSAP(function () {
     if (confirmRidePopupPanel) {
@@ -162,7 +152,7 @@ const CaptainHome = () => {
         <CaptainDetails />
       </div>
 
-      <div ref={ridePopupPanelRef} className='fixed w-full z-10 bottom-0 translate-y-full bg-white px-3 py-10 pt-12'>
+      <div ref={ridePopupPanelRef} className={`fixed w-full z-10 bottom-0 bg-white px-3 py-10 pt-12 ${ridePopupPanel ? 'translate-y-0' : 'translate-y-full'}`}>
         <RidePopUp
           ride={ride}
           setRidePopupPanel={setRidePopupPanel}

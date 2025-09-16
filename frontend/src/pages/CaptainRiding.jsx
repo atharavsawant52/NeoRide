@@ -14,6 +14,7 @@ const CaptainRiding = () => {
   const finishRidePanelRef = useRef(null)
   const location = useLocation()
   const rideData = location.state?.ride ?? null
+  console.log("CaptainRiding rideData:", rideData);
   const { socket } = useContext(SocketContext)
 
   useGSAP(function () {

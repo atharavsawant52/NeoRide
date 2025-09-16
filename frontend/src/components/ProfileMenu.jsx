@@ -45,8 +45,8 @@ const ProfileMenu = ({ role = 'user', className = '' }) => {
         title={displayName}
         aria-label="User profile"
       >
-        {user.avatar ? (
-          <img src={user.avatar} alt="avatar" className="h-10 w-10 rounded-full object-cover" />
+        {user.profilePic ? (
+          <img src={user.profilePic} alt="avatar" className="h-10 w-10 rounded-full object-cover" />
         ) : (
           <i className="ri-user-2-line text-lg"></i>
         )}
@@ -55,8 +55,8 @@ const ProfileMenu = ({ role = 'user', className = '' }) => {
       {open && (
         <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg z-50 p-4">
           <div className="flex items-center gap-3">
-            {user.avatar ? (
-              <img src={user.avatar} alt="avatar" className="h-12 w-12 rounded-full object-cover" />
+            {user.profilePic ? (
+              <img src={user.profilePic} alt="avatar" className="h-12 w-12 rounded-full object-cover" />
             ) : (
               <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center text-xl">
                 <i className="ri-user-2-line"></i>

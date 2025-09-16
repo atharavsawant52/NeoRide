@@ -49,8 +49,8 @@ const CaptainProfileMenu = ({ className = '' }) => {
         className="h-10 w-10 bg-white rounded-full shadow-sm flex items-center justify-center overflow-hidden"
         aria-label="Captain profile"
       >
-        {captain.avatar ? (
-          <img src={captain.avatar} alt="avatar" className="h-10 w-10 rounded-full object-cover" />
+        {captain.profilePic ? (
+          <img src={captain.profilePic} alt="avatar" className="h-10 w-10 rounded-full object-cover" />
         ) : (
           <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-xl">
             <i className="ri-user-2-line"></i>
@@ -61,8 +61,8 @@ const CaptainProfileMenu = ({ className = '' }) => {
       {open && (
         <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-lg z-50 p-4">
           <div className="flex items-center gap-3">
-            {captain.avatar ? (
-              <img src={captain.avatar} alt="avatar" className="h-12 w-12 rounded-full object-cover" />
+            {captain.profilePic ? (
+              <img src={captain.profilePic} alt="avatar" className="h-12 w-12 rounded-full object-cover" />
             ) : (
               <div className="h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center text-xl">
                 <i className="ri-user-2-line"></i>

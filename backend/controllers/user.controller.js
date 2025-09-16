@@ -3,6 +3,8 @@ const userService = require('../services/user.service');
 const { validationResult } = require('express-validator');
 const blackListTokenModel = require('../models/blackListToken.model');
 
+const imagekit = require('../config/imagekit');
+
 module.exports.registerUser = async (req, res, next) => {
 
     const errors = validationResult(req);
@@ -18,13 +20,24 @@ module.exports.registerUser = async (req, res, next) => {
         return res.status(400).json({ message: 'User already exist' });
     }
 
+    let profilePic = undefined
+
+    if (req.file) {
+        const uploadedImage = await imagekit.upload({
+            file: req.file.buffer,
+            fileName: req.file.originalname,
+        });
+        profilePic = uploadedImage.url
+    }
+
     const hashedPassword = await userModel.hashPassword(password);
 
     const user = await userService.createUser({
         firstname: fullname.firstname,
         lastname: fullname.lastname,
         email,
-        password: hashedPassword
+        password: hashedPassword,
+        profilePic
     });
 
     const token = user.generateAuthToken();

@@ -4,6 +4,8 @@ const blackListTokenModel = require('../models/blackListToken.model');
 const { validationResult } = require('express-validator');
 
 
+const imagekit = require('../config/imagekit');
+
 module.exports.registerCaptain = async (req, res, next) => {
 
     const errors = validationResult(req);
@@ -19,6 +21,15 @@ module.exports.registerCaptain = async (req, res, next) => {
         return res.status(400).json({ message: 'Captain already exist' });
     }
 
+    let profilePic = undefined
+
+    if (req.file) {
+        const uploadedImage = await imagekit.upload({
+            file: req.file.buffer,
+            fileName: req.file.originalname,
+        });
+        profilePic = uploadedImage.url
+    }
 
     const hashedPassword = await captainModel.hashPassword(password);
 
@@ -30,7 +41,8 @@ module.exports.registerCaptain = async (req, res, next) => {
         color: vehicle.color,
         plate: vehicle.plate,
         capacity: vehicle.capacity,
-        vehicleType: vehicle.vehicleType
+        vehicleType: vehicle.vehicleType,
+        profilePic
     });
 
     const token = captain.generateAuthToken();

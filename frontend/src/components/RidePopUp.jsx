@@ -4,6 +4,7 @@ import React from 'react';
 const RidePopUp = (props) => {
   const ride = props.ride ?? {};
   const user = ride.user ?? {};
+  console.log("RidePopUp user profilePic:", user.profilePic);
   const fullnameObj = user.fullname ?? user.name ?? {};
   const userName = typeof fullnameObj === 'object'
     ? `${fullnameObj.firstname ?? fullnameObj.firstName ?? ''} ${fullnameObj.lastname ?? fullnameObj.lastName ?? ''}`.trim()
@@ -46,7 +47,7 @@ const RidePopUp = (props) => {
         <div className='flex items-center gap-3'>
           <img
             className='h-12 w-12 rounded-full object-cover'
-            src={user.avatar ?? user.photoUrl ?? 'https://i.pinimg.com/236x/af/26/28/af26280b0ca305be47df0b799ed1b12b.jpg'}
+            src={user.profilePic ?? user.photoUrl ?? 'https://i.pinimg.com/236x/af/26/28/af26280b0ca305be47df0b799ed1b12b.jpg'}
             alt={userName}
           />
           <h2 className='text-lg font-medium'>{userName}</h2>

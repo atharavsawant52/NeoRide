@@ -38,11 +38,13 @@ module.exports.createRide = async (req, res) => {
             pickupCoordinates.lng,
             2
         );
+        console.log(`Found ${captainsInRadius.length} captains in radius.`);
 
         const rideWithoutOtp = await rideModel.findById(ride._id)
-            .populate('user', 'fullname email socketId');
+            .populate('user', 'fullname email socketId profilePic');
 
         captainsInRadius.forEach(captain => {
+            console.log(`Attempting to send new-ride to captain: ${captain._id} with socketId: ${captain.socketId}`);
             try {
                 sendMessageToSocketId(captain.socketId, {
                     event: 'new-ride',
@@ -91,7 +93,7 @@ module.exports.confirmRide = async (req, res) => {
 
         const populatedRide = await rideModel.findById(ride._id)
             .populate('captain', 'fullname vehicle socketId email')
-            .populate('user', 'fullname email socketId')
+            .populate('user', 'fullname email socketId profilePic')
             .select('+otp');
 
         if (populatedRide?.user?.socketId) {
@@ -122,7 +124,7 @@ module.exports.startRide = async (req, res) => {
 
         const populatedRide = await rideModel.findById(ride._id)
             .populate('captain', 'fullname vehicle socketId email')
-            .populate('user', 'fullname email socketId')
+            .populate('user', 'fullname email socketId profilePic')
             .select('+otp');
 
         if (populatedRide?.user?.socketId) {
@@ -162,7 +164,7 @@ module.exports.endRide = async (req, res) => {
 
         const populatedRide = await rideModel.findById(ride._id)
             .populate('captain', 'fullname vehicle socketId email stats')
-            .populate('user', 'fullname email socketId')
+            .populate('user', 'fullname email socketId profilePic')
             .select('+otp');
 
         if (populatedRide?.user?.socketId) {

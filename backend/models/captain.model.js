@@ -14,6 +14,11 @@ const captainSchema = new mongoose.Schema({
             minlength: [3, 'Lastname must be at least 3 characters long'],
         }
     },
+    profilePic: {
+        type: String,
+        required: true,
+        default: "https://ik.imagekit.io/x5nufbqb6/user-profile-icon-free-vector_SU_b03V_O.jpg?updatedAt=1720705229085"
+    },
     email: {
         type: String,
         required: true,
