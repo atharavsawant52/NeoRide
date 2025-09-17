@@ -62,7 +62,7 @@ const rideSchema = new mongoose.Schema({
 
   vehicleType: {
     type: String,
-    enum: ['auto', 'car', 'moto'],
+    enum: ['auto', 'car', 'motorcycle'],
     required: true
   },
 

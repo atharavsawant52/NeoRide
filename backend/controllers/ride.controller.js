@@ -32,19 +32,30 @@ module.exports.createRide = async (req, res) => {
         res.status(201).json(rideToReturn);
 
         // perform post-response tasks (notify captains)
+        
         const pickupCoordinates = await mapService.getAddressCoordinate(pickup);
+        console.log(`Searching for vehicleType: ${vehicleType}`);
+        const allCaptainsInRadius = await mapService.getCaptainsInTheRadius(
+            pickupCoordinates.ltd,
+            pickupCoordinates.lng,
+            2,
+            null // Pass null for vehicleType to get all captains in radius
+        );
+        console.log(`Found ${allCaptainsInRadius.length} captains in radius (before vehicleType filter).`);
+
         const captainsInRadius = await mapService.getCaptainsInTheRadius(
             pickupCoordinates.ltd,
             pickupCoordinates.lng,
-            2
+            2,
+            vehicleType // Pass the actual vehicleType for filtering
         );
-        console.log(`Found ${captainsInRadius.length} captains in radius.`);
+        console.log(`Found ${captainsInRadius.length} captains in radius with vehicleType '${vehicleType}'.`);
 
         const rideWithoutOtp = await rideModel.findById(ride._id)
             .populate('user', 'fullname email socketId profilePic');
 
         captainsInRadius.forEach(captain => {
-            console.log(`Attempting to send new-ride to captain: ${captain._id} with socketId: ${captain.socketId}`);
+            console.log(`Attempting to send new-ride to captain: ${captain._id} with socketId: ${captain.socketId} and vehicleType: ${captain.vehicle.vehicleType}`);
             try {
                 sendMessageToSocketId(captain.socketId, {
                     event: 'new-ride',
