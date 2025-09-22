@@ -34,5 +34,18 @@ router.get('/profile', authMiddleware.authCaptain, captainController.getCaptainP
 router.get('/logout', authMiddleware.authCaptain, captainController.logoutCaptain)
 router.get("/stats", authMiddleware.authCaptain, getCaptainStats)
 
+// update captain profile
+router.patch('/profile', authMiddleware.authCaptain, upload.single('profilePic'), [
+    body('fullname.firstname').optional().isLength({ min: 3 }).withMessage('First name must be at least 3 characters long'),
+    body('email').optional().isEmail().withMessage('Invalid Email'),
+    body('phone').optional().isString().isLength({ min: 7 }).withMessage('Invalid phone number'),
+    body('vehicle.color').optional().isLength({ min: 3 }).withMessage('Color must be at least 3 characters long'),
+    body('vehicle.plate').optional().isLength({ min: 3 }).withMessage('Plate must be at least 3 characters long'),
+    body('vehicle.capacity').optional().isInt({ min: 1 }).withMessage('Capacity must be at least 1'),
+    body('vehicle.vehicleType').optional().isIn(['car', 'motorcycle', 'auto']).withMessage('Invalid vehicle type')
+],
+    captainController.updateCaptainProfile
+)
+
 
 module.exports = router;

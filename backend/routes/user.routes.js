@@ -3,8 +3,6 @@ const router = express.Router();
 const { body } = require("express-validator")
 const userController = require('../controllers/user.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
-
-
 const upload = require('../middlewares/upload');
 
 router.post('/register', upload.single('profilePic'), [
@@ -23,6 +21,12 @@ router.post('/login', [
 )
 
 router.get('/profile', authMiddleware.authUser, userController.getUserProfile)
+
+router.patch('/profile', authMiddleware.authUser, upload.single('profilePic'), [
+    body('fullname.firstname').isLength({ min: 3 }).withMessage('First name must be at least 3 characters long')
+],
+    userController.updateUserProfile
+)
 
 router.get('/logout', authMiddleware.authUser, userController.logoutUser)
 

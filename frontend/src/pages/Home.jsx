@@ -223,9 +223,15 @@ const Home = () => {
 
   return (
     <div className='h-screen relative overflow-hidden'>
-      <img className='w-16 absolute left-5 top-5' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="" />
-      {/* Logout placed top-right */}
-      <div className="absolute right-4 top-4 z-50">
+      <div className='absolute left-5 top-5'>
+        <img className='w-16' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="" />
+      </div>
+      {/* Header right: stack Profile + Logout vertically */}
+      <div className="absolute right-4 top-4 z-50 flex flex-col items-end gap-2">
+        {/* Profile button navigates to /profile */}
+        <button onClick={() => navigate('/profile')} className='h-10 w-10 bg-white rounded-full shadow flex items-center justify-center'>
+          <i className="ri-user-2-line"></i>
+        </button>
         <LogoutButton role="user" />
       </div>
 

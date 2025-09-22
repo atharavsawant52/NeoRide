@@ -15,7 +15,10 @@ const CaptainInfo = () => {
       </div>
 
       <div className='pt-24 p-6'>
-        <h2 className='text-2xl font-semibold mb-4'>Captain Info</h2>
+        <div className='flex items-center justify-between mb-4'>
+          <h2 className='text-2xl font-semibold'>Captain Info</h2>
+          <Link to='/captain-profile' className='px-4 py-2 rounded-lg bg-black text-white'>Edit Profile</Link>
+        </div>
         <CaptainDetails />
       </div>
     </div>
