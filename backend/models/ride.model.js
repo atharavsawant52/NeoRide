@@ -44,6 +44,24 @@ const rideSchema = new mongoose.Schema({
     type: Number,
   }, // in meters
 
+  // timestamps for real ride timing
+  startedAt: {
+    type: Date,
+    default: null,
+  },
+  endedAt: {
+    type: Date,
+    default: null,
+  },
+
+  // user rating for the ride (1-5)
+  rating: {
+    type: Number,
+    min: 1,
+    max: 5,
+    default: null,
+  },
+
   paymentID: {
     type: String,
   },

@@ -4,6 +4,7 @@ const mapService = require('../services/maps.service');
 const { sendMessageToSocketId } = require('../socket');
 const rideModel = require('../models/ride.model');
 const captainModel = require('../models/captain.model'); // ✅ import captain model
+const mongoose = require('mongoose');
 
 // ---------------------- CREATE RIDE ----------------------
 module.exports.createRide = async (req, res) => {
@@ -68,6 +69,52 @@ module.exports.createRide = async (req, res) => {
 
     } catch (err) {
         console.error('createRide error:', err);
+        return res.status(500).json({ message: err.message });
+    }
+};
+
+// ---------------------- RATE RIDE ----------------------
+module.exports.rateRide = async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { rideId, rating } = req.body;
+
+    try {
+        // ensure ride belongs to this user and is completed
+        const ride = await rideModel.findOne({ _id: rideId, user: req.user._id });
+        if (!ride) {
+            return res.status(404).json({ message: 'Ride not found' });
+        }
+        if (ride.status !== 'completed') {
+            return res.status(400).json({ message: 'Ride is not completed yet' });
+        }
+        if (ride.rating != null) {
+            return res.status(400).json({ message: 'Rating already submitted' });
+        }
+
+        // save rating on ride
+        ride.rating = rating;
+        await ride.save();
+
+        // recalc captain average rating across all rated rides
+        if (ride.captain) {
+            const agg = await rideModel.aggregate([
+                { $match: { captain: new mongoose.Types.ObjectId(ride.captain), rating: { $ne: null } } },
+                { $group: { _id: '$captain', avgRating: { $avg: '$rating' }, count: { $sum: 1 } } }
+            ]);
+
+            const avg = agg?.[0]?.avgRating ?? rating;
+            await captainModel.findByIdAndUpdate(ride.captain, {
+                $set: { 'stats.rating': Math.round(avg * 10) / 10 }
+            });
+        }
+
+        return res.status(200).json({ success: true });
+    } catch (err) {
+        console.error('rateRide error:', err);
         return res.status(500).json({ message: err.message });
     }
 };

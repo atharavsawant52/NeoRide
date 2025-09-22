@@ -5,6 +5,7 @@ import LiveTracking from '../components/LiveTracking'
 import { ToastContainer, toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import PaymentCard from '../components/PaymentCard' // new component
+import RatingModal from '../components/RatingModal'
 
 const Riding = () => {
   const location = useLocation()
@@ -15,7 +16,11 @@ const Riding = () => {
 
   useEffect(() => {
     if (!socket) return;
-    const handleRideEnded = () => navigate('/home')
+    const handleRideEnded = (rideData) => {
+      // open rating modal, store latest ride
+      if (rideData) setLocalRide(rideData)
+      setRatingOpen(true)
+    }
     socket.on('ride-ended', handleRideEnded)
 
     // optional: listen for server ack of payment
@@ -70,6 +75,13 @@ const Riding = () => {
     // optionally navigate away: navigate('/home')
   }
 
+  // Rating modal state
+  const [ratingOpen, setRatingOpen] = useState(false)
+  const handleRatingSubmitted = () => {
+    setRatingOpen(false)
+    navigate('/home')
+  }
+
   return (
     <div className='h-screen'>
       <ToastContainer />
@@ -122,6 +134,13 @@ const Riding = () => {
 
         </div>
       </div>
+      {/* Rating Modal */}
+      <RatingModal
+        rideId={(localRide ?? ride)?._id}
+        open={ratingOpen}
+        onClose={() => { setRatingOpen(false); navigate('/home') }}
+        onSubmitted={handleRatingSubmitted}
+      />
     </div>
   )
 }

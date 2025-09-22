@@ -125,10 +125,16 @@ module.exports.startRide = async ({ rideId, otp, captain }) => {
         throw new Error('Invalid OTP');
     }
 
-    // set to ongoing and return populated ride after update
-    await rideModel.findOneAndUpdate({ _id: rideId }, { status: 'ongoing' });
+    // set to ongoing, record startedAt, and return populated ride after update
+    await rideModel.findOneAndUpdate(
+        { _id: rideId },
+        { status: 'ongoing', startedAt: new Date() }
+    );
 
-    const updated = await rideModel.findById(rideId).populate('user').populate('captain').select('+otp');
+    const updated = await rideModel.findById(rideId)
+        .populate('user')
+        .populate('captain')
+        .select('+otp');
     return updated;
 }
 
@@ -150,8 +156,37 @@ module.exports.endRide = async ({ rideId, captain }) => {
         throw new Error('Ride not ongoing');
     }
 
-    await rideModel.findOneAndUpdate({ _id: rideId }, { status: 'completed' });
+    // compute duration using startedAt and set endedAt; also compute distance
+    const endTime = new Date();
+    let durationSec = null;
+    if (ride.startedAt) {
+        durationSec = Math.max(1, Math.floor((endTime.getTime() - new Date(ride.startedAt).getTime()) / 1000));
+    }
 
-    const updated = await rideModel.findById(rideId).populate('user').populate('captain').select('+otp');
+    // distance from maps (meters); fallback to existing distance
+    let distanceMeters = ride.distance;
+    try {
+        const dt = await mapService.getDistanceTime(ride.pickup, ride.destination);
+        if (dt && dt.distance && typeof dt.distance.value === 'number') {
+            distanceMeters = dt.distance.value;
+        }
+    } catch (e) {
+        // ignore map errors; keep previous distance if any
+    }
+
+    await rideModel.findOneAndUpdate(
+        { _id: rideId },
+        {
+            status: 'completed',
+            endedAt: endTime,
+            ...(durationSec ? { duration: durationSec } : {}),
+            ...(distanceMeters != null ? { distance: distanceMeters } : {})
+        }
+    );
+
+    const updated = await rideModel.findById(rideId)
+        .populate('user')
+        .populate('captain')
+        .select('+otp');
     return updated;
 }
