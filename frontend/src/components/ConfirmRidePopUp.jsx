@@ -14,12 +14,8 @@ const ConfirmRidePopUp = (props) => {
   // Debug: log ride object so you can inspect phone, fare, etc.
   useEffect(() => {
     console.log('ConfirmRidePopUp props.ride:', props.ride);
-
-    // Sync OTP from incoming ride to local state (helps autopopulate)
-    const incomingOtp = props?.ride?.otp ?? props?.ride?.otpCode ?? '';
-    if (incomingOtp) {
-      setOtp(String(incomingOtp));
-    }
+    // Clear OTP on mount or when ride changes; captain must enter manually
+    setOtp('');
   }, [props.ride]);
 
   const submitHander = async (e) => {
@@ -171,6 +167,7 @@ const ConfirmRidePopUp = (props) => {
               type="text"
               className="bg-[#eee] px-6 py-4 font-mono text-lg rounded-lg w-full mt-3"
               placeholder="Enter OTP"
+              autoComplete="off"
             />
 
             <button

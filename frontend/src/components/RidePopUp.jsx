@@ -47,7 +47,7 @@ const RidePopUp = (props) => {
         <div className='flex items-center gap-3'>
           <img
             className='h-12 w-12 rounded-full object-cover'
-            src={user.profilePic ?? user.photoUrl ?? 'https://i.pinimg.com/236x/af/26/28/af26280b0ca305be47df0b799ed1b12b.jpg'}
+            src={user.profilePic || user.photoUrl || 'https://i.pinimg.com/236x/af/26/28/af26280b0ca305be47df0b799ed1b12b.jpg'}
             alt={userName}
           />
           <h2 className='text-lg font-medium'>{userName}</h2>

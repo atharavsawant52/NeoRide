@@ -98,7 +98,7 @@ const CaptainHome = () => {
 
     try {
       const token = localStorage.getItem('token')
-      await axios.post(`${API_BASE}/rides/confirm`, {
+      const resp = await axios.post(`${API_BASE}/rides/confirm`, {
         rideId: ride._id,
         captainId: captain?._id
       }, {
@@ -109,6 +109,9 @@ const CaptainHome = () => {
 
       // server will emit events; update local UI
       setRidePopupPanel(false)
+      if (resp?.data) {
+        setRide(resp.data)
+      }
       setConfirmRidePopupPanel(true)
     } catch (err) {
       console.error('confirmRide error', err?.response ?? err)

@@ -149,19 +149,25 @@ module.exports.confirmRide = async (req, res) => {
     try {
         const ride = await rideService.confirmRide({ rideId, captain: req.captain });
 
-        const populatedRide = await rideModel.findById(ride._id)
+        // version for captain HTTP response (no otp)
+        const rideForCaptain = await rideModel.findById(ride._id)
+            .populate('captain', 'fullname vehicle socketId email')
+            .populate('user', 'fullname email socketId profilePic');
+
+        // version for user socket event (with otp)
+        const rideForUser = await rideModel.findById(ride._id)
             .populate('captain', 'fullname vehicle socketId email')
             .populate('user', 'fullname email socketId profilePic')
             .select('+otp');
 
-        if (populatedRide?.user?.socketId) {
-            sendMessageToSocketId(populatedRide.user.socketId, {
+        if (rideForUser?.user?.socketId) {
+            sendMessageToSocketId(rideForUser.user.socketId, {
                 event: 'ride-confirmed',
-                data: populatedRide
+                data: rideForUser
             });
         }
 
-        return res.status(200).json(populatedRide);
+        return res.status(200).json(rideForCaptain);
     } catch (err) {
         console.error('confirmRide error:', err);
         return res.status(500).json({ message: err.message });
@@ -222,8 +228,7 @@ module.exports.endRide = async (req, res) => {
 
         const populatedRide = await rideModel.findById(ride._id)
             .populate('captain', 'fullname vehicle socketId email stats')
-            .populate('user', 'fullname email socketId profilePic')
-            .select('+otp');
+            .populate('user', 'fullname email socketId profilePic');
 
         if (populatedRide?.user?.socketId) {
             sendMessageToSocketId(populatedRide.user.socketId, {

@@ -133,8 +133,7 @@ module.exports.startRide = async ({ rideId, otp, captain }) => {
 
     const updated = await rideModel.findById(rideId)
         .populate('user')
-        .populate('captain')
-        .select('+otp');
+        .populate('captain');
     return updated;
 }
 
@@ -146,7 +145,7 @@ module.exports.endRide = async ({ rideId, captain }) => {
     const ride = await rideModel.findOne({
         _id: rideId,
         captain: captain._id
-    }).populate('user').populate('captain').select('+otp');
+    }).populate('user').populate('captain');
 
     if (!ride) {
         throw new Error('Ride not found');
