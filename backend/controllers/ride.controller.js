@@ -73,6 +73,50 @@ module.exports.createRide = async (req, res) => {
     }
 };
 
+// ---------------------- USER HISTORY ----------------------
+module.exports.getUserHistory = async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+        const status = req.query.status; // e.g., 'completed', 'ongoing', 'all'
+        const filter = { user: req.user._id };
+        if (status && status !== 'all') {
+            filter.status = status;
+        }
+
+        const rides = await rideModel
+            .find(filter)
+            .sort({ createdAt: -1 })
+            .limit(limit);
+
+        return res.status(200).json({ rides });
+    } catch (err) {
+        console.error('getUserHistory error:', err);
+        return res.status(500).json({ message: err.message });
+    }
+};
+
+// ---------------------- CAPTAIN HISTORY ----------------------
+module.exports.getCaptainHistory = async (req, res) => {
+    try {
+        const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+        const status = req.query.status ?? 'completed';
+        const filter = { captain: req.captain._id };
+        if (status && status !== 'all') {
+            filter.status = status;
+        }
+
+        const rides = await rideModel
+            .find(filter)
+            .sort({ createdAt: -1 })
+            .limit(limit);
+
+        return res.status(200).json({ rides });
+    } catch (err) {
+        console.error('getCaptainHistory error:', err);
+        return res.status(500).json({ message: err.message });
+    }
+};
+
 // ---------------------- RATE RIDE ----------------------
 module.exports.rateRide = async (req, res) => {
     const errors = validationResult(req);

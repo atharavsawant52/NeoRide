@@ -1,6 +1,5 @@
 // src/pages/CaptainHome.jsx
 import React, { useEffect, useRef, useState, useContext } from 'react'
-import { Link } from 'react-router-dom'
 import CaptainDetails from '../components/CaptainDetails'
 import RidePopUp from '../components/RidePopUp'
 import { useGSAP } from '@gsap/react'
@@ -9,7 +8,7 @@ import ConfirmRidePopUp from '../components/ConfirmRidePopUp'
 import { SocketContext } from '../context/SocketContext'
 import { CaptainDataContext } from '../context/CapatainContext'
 import axios from 'axios'
-import LogoutButton from '../components/LogoutButton'
+import CaptainProfileMenu from '../components/CaptainProfileMenu'
 
 const CaptainHome = () => {
   const [ ridePopupPanel, setRidePopupPanel ] = useState(false)
@@ -138,12 +137,7 @@ const CaptainHome = () => {
       <div className='fixed p-6 top-0 flex items-center justify-between w-screen z-40'>
         <img className='w-16' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="" />
         <div className='flex items-center gap-3'>
-          <div className='mr-2'>
-            <LogoutButton role="captain" />
-          </div>
-          <Link to='/captain-info' className=' h-10 w-10 bg-white flex items-center justify-center rounded-full'>
-            <i className="text-lg font-medium ri-user-2-line"></i>
-          </Link>
+          <CaptainProfileMenu />
         </div>
       </div>
 

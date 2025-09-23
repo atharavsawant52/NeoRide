@@ -12,7 +12,7 @@ import { SocketContext } from '../context/SocketContext';
 import { UserDataContext } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
 import LiveTracking from '../components/LiveTracking';
-import LogoutButton from '../components/LogoutButton';
+import ProfileMenu from '../components/ProfileMenu';
 
 
 const Home = () => {
@@ -226,13 +226,9 @@ const Home = () => {
       <div className='absolute left-5 top-5'>
         <img className='w-16' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="" />
       </div>
-      {/* Header right: stack Profile + Logout vertically */}
-      <div className="absolute right-4 top-4 z-50 flex flex-col items-end gap-2">
-        {/* Profile button navigates to /profile */}
-        <button onClick={() => navigate('/profile')} className='h-10 w-10 bg-white rounded-full shadow flex items-center justify-center'>
-          <i className="ri-user-2-line"></i>
-        </button>
-        <LogoutButton role="user" />
+      {/* Header right: Profile menu containing actions incl. Logout & History */}
+      <div className="absolute right-4 top-4 z-50 flex items-center gap-2">
+        <ProfileMenu role="user" />
       </div>
 
       <div className='h-screen w-screen'>

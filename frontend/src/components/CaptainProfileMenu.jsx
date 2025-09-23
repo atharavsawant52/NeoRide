@@ -89,10 +89,17 @@ const CaptainProfileMenu = ({ className = '' }) => {
             </button>
 
             <button
-              onClick={() => { setOpen(false); navigate('/captain-earnings'); }}
+              onClick={() => { setOpen(false); navigate('/captain-profile-view'); }}
               className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 text-sm"
             >
-              Earnings
+              View Profile
+            </button>
+
+            <button
+              onClick={() => { setOpen(false); navigate('/captain-history'); }}
+              className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 text-sm"
+            >
+              History
             </button>
 
             <div className="pt-2">

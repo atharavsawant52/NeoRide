@@ -77,6 +77,7 @@ const ProfileMenu = ({ role = 'user', className = '' }) => {
           <div className="mt-3 flex flex-col gap-2">
             <button onClick={goToProfile} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 text-sm">View Profile</button>
             <button onClick={() => { setOpen(false); navigate('/help'); }} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 text-sm">Help & Support</button>
+            <button onClick={() => { setOpen(false); navigate('/history'); }} className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 text-sm">History</button>
             <div className="pt-2">
               <LogoutButton role={role} />
             </div>

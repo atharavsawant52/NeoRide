@@ -17,6 +17,9 @@ import CaptainInfo from './pages/CaptainInfo'
 import UserProfile from './pages/UserProfile'
 import CaptainProfile from './pages/CaptainProfile'
 import 'remixicon/fonts/remixicon.css'
+import UserHistory from './pages/UserHistory'
+import CaptainHistory from './pages/CaptainHistory'
+import CaptainProfileView from './pages/CaptainProfileView'
 
 const App = () => {
 
@@ -37,6 +40,13 @@ const App = () => {
               <Home />
             </UserProtectWrapper>
           } />
+        <Route path='/history'
+          element={
+            <UserProtectWrapper>
+              <UserHistory />
+            </UserProtectWrapper>
+          }
+        />
         <Route path='/user/logout'
           element={<UserProtectWrapper>
             <UserLogout />
@@ -47,6 +57,11 @@ const App = () => {
             <CaptainHome />
           </CaptainProtectWrapper>
 
+        } />
+        <Route path='/captain-history' element={
+          <CaptainProtectWrapper>
+            <CaptainHistory />
+          </CaptainProtectWrapper>
         } />
         <Route path='/captain/logout' element={
           <CaptainProtectWrapper>
@@ -62,6 +77,11 @@ const App = () => {
           <UserProtectWrapper>
             <UserProfile />
           </UserProtectWrapper>
+        } />
+        <Route path='/captain-profile-view' element={
+          <CaptainProtectWrapper>
+            <CaptainProfileView />
+          </CaptainProtectWrapper>
         } />
         <Route path='/captain-profile' element={
           <CaptainProtectWrapper>

@@ -47,6 +47,18 @@ router.post('/rate',
     rideController.rateRide
 )
 
+// user ride history
+router.get('/user/history',
+    authMiddleware.authUser,
+    rideController.getUserHistory
+)
+
+// captain ride history
+router.get('/captain/history',
+    authMiddleware.authCaptain,
+    rideController.getCaptainHistory
+)
+
 
 
 module.exports = router;
