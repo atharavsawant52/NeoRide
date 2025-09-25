@@ -80,7 +80,7 @@ const rideSchema = new mongoose.Schema({
 
   vehicleType: {
     type: String,
-    enum: ['auto', 'car', 'motorcycle'],
+    enum: ['auto', 'car', 'motorcycle', 'taxi', 'carxl'],
     required: true
   },
 
@@ -88,6 +88,31 @@ const rideSchema = new mongoose.Schema({
     type: String,
     enum: ['cash', 'online'],
     default: 'cash'
+  },
+
+  // Payment gate
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid'],
+    default: 'pending'
+  },
+  paymentConfirmedAt: {
+    type: Date,
+    default: null
+  },
+  // Event log for payments and lifecycle
+  paymentEvents: {
+    type: [
+      new mongoose.Schema({
+        type: { type: String, enum: ['payment_initiated', 'payment_success', 'cash_marked_received', 'cash_acknowledged', 'ride_completed', 'ride_cancelled'], required: true },
+        method: { type: String, enum: ['cash', 'online'], default: undefined },
+        paymentId: { type: String },
+        amount: { type: Number },
+        actor: { type: String, enum: ['user', 'captain', 'system'] },
+        at: { type: Date, default: Date.now }
+      }, { _id: false })
+    ],
+    default: []
   }
 
 }, { timestamps: true });

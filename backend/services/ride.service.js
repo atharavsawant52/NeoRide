@@ -12,25 +12,35 @@ async function getFare(pickup, destination) {
     const baseFare = {
         auto: 30,
         car: 50,
-        motorcycle: 20
+        motorcycle: 20,
+        taxi: 45,
+        carxl: 70
     };
 
     const perKmRate = {
         auto: 26,
         car: 26,
-        motorcycle: 10
+        motorcycle: 10,
+        taxi: 24,
+        carxl: 32
     };
 
     const perMinuteRate = {
         auto: 5,
         car: 5,
-        motorcycle: 1.5
+        motorcycle: 1.5,
+        taxi: 4.5,
+        carxl: 6
     };
 
+    const dKm = distanceTime.distance.value / 1000;
+    const dMin = distanceTime.duration.value / 60;
     const fare = {
-        auto: Math.round(baseFare.auto + ((distanceTime.distance.value / 1000) * perKmRate.auto) + ((distanceTime.duration.value / 60) * perMinuteRate.auto)),
-        car: Math.round(baseFare.car + ((distanceTime.distance.value / 1000) * perKmRate.car) + ((distanceTime.duration.value / 60) * perMinuteRate.car)),
-        motorcycle: Math.round(baseFare.motorcycle + ((distanceTime.distance.value / 1000) * perKmRate.motorcycle) + ((distanceTime.duration.value / 60) * perMinuteRate.motorcycle))
+        auto: Math.round(baseFare.auto + (dKm * perKmRate.auto) + (dMin * perMinuteRate.auto)),
+        car: Math.round(baseFare.car + (dKm * perKmRate.car) + (dMin * perMinuteRate.car)),
+        motorcycle: Math.round(baseFare.motorcycle + (dKm * perKmRate.motorcycle) + (dMin * perMinuteRate.motorcycle)),
+        taxi: Math.round(baseFare.taxi + (dKm * perKmRate.taxi) + (dMin * perMinuteRate.taxi)),
+        carxl: Math.round(baseFare.carxl + (dKm * perKmRate.carxl) + (dMin * perMinuteRate.carxl)),
     };
 
     return fare;
@@ -155,6 +165,11 @@ module.exports.endRide = async ({ rideId, captain }) => {
         throw new Error('Ride not ongoing');
     }
 
+    // Payment must be completed before allowing ride completion
+    if (ride.paymentStatus !== 'paid') {
+        throw new Error('Payment is not completed yet');
+    }
+
     // compute duration using startedAt and set endedAt; also compute distance
     const endTime = new Date();
     let durationSec = null;
@@ -179,7 +194,8 @@ module.exports.endRide = async ({ rideId, captain }) => {
             status: 'completed',
             endedAt: endTime,
             ...(durationSec ? { duration: durationSec } : {}),
-            ...(distanceMeters != null ? { distance: distanceMeters } : {})
+            ...(distanceMeters != null ? { distance: distanceMeters } : {}),
+            $push: { paymentEvents: { type: 'ride_completed', actor: 'captain', at: new Date() } }
         }
     );
 

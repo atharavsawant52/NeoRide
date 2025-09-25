@@ -50,7 +50,7 @@ function initializeSocket(server) {
       }
     });
 
-    // <-- NEW: listen for payment-made emitted by passenger frontend
+    // Listen for payment-made emitted by passenger frontend (online payment success)
     socket.on('payment-made', async (payload) => {
       // payload expected: { rideId, paymentId, amount, method }
       try {
@@ -58,36 +58,80 @@ function initializeSocket(server) {
           return socket.emit('payment-ack', { ok: false, message: 'Invalid payload' });
         }
 
-        const ride = await rideModel.findById(payload.rideId).populate('captain', 'socketId fullname email');
+        const ride = await rideModel.findById(payload.rideId).populate('captain', 'socketId fullname email').populate('user', 'socketId');
         if (!ride) {
           socket.emit('payment-ack', { ok: false, message: 'Ride not found' });
           return;
         }
 
+        // Update DB: mark paid if online
+        await rideModel.findByIdAndUpdate(ride._id, {
+          paymentID: payload.paymentId,
+          paymentMethod: payload.method || 'online',
+          paymentStatus: 'paid',
+          paymentConfirmedAt: new Date(),
+          $push: { paymentEvents: { type: 'payment_success', method: payload.method || 'online', paymentId: payload.paymentId, amount: payload.amount, actor: 'user', at: new Date() } }
+        });
+
         const captainSocketId = ride.captain?.socketId;
+        const userSocketId = ride.user?.socketId;
         const notifyData = {
-          rideId: payload.rideId,
+          rideId: String(ride._id),
           paymentId: payload.paymentId,
           amount: payload.amount,
-          method: payload.method,
-          passengerMessage: payload.message || `Passenger paid ${payload.method}`,
+          method: payload.method || 'online',
+          status: 'paid',
           timestamp: new Date().toISOString(),
         };
 
-        // Use helper to emit to captain socket id (your helper is below in file)
+        // Inform captain and user: status changed to paid
         if (captainSocketId) {
-          // sendMessageToSocketId defined later in file (it exists already in your code)
-          sendMessageToSocketId(captainSocketId, { event: 'ride-paid', data: notifyData });
-        } else {
-          console.warn('Captain socketId not found for ride:', payload.rideId);
+          sendMessageToSocketId(captainSocketId, { event: 'payment-status-changed', data: notifyData });
+        }
+        if (userSocketId) {
+          sendMessageToSocketId(userSocketId, { event: 'payment-status-changed', data: notifyData });
         }
 
-        // Optionally also send ack back to the passenger who sent the event
+        // Also keep backward-compatible event
+        if (captainSocketId) {
+          sendMessageToSocketId(captainSocketId, { event: 'ride-paid', data: notifyData });
+        }
+
         socket.emit('payment-ack', { ok: true, paymentId: payload.paymentId });
 
       } catch (err) {
         console.error('Error handling payment-made socket event:', err);
         socket.emit('payment-ack', { ok: false, message: 'Server error' });
+      }
+    });
+
+    // Captain acknowledges cash received
+    socket.on('payment-acknowledged', async (payload) => {
+      // payload expected: { rideId, paymentId? }
+      try {
+        if (!payload || !payload.rideId) return;
+        const ride = await rideModel.findById(payload.rideId).populate('captain', 'socketId').populate('user', 'socketId');
+        if (!ride) return;
+
+        await rideModel.findByIdAndUpdate(ride._id, {
+          paymentStatus: 'paid',
+          paymentMethod: 'cash',
+          paymentConfirmedAt: new Date(),
+          ...(payload.paymentId ? { paymentID: payload.paymentId } : {}),
+          $push: { paymentEvents: { type: 'cash_acknowledged', method: 'cash', paymentId: payload.paymentId, actor: 'captain', at: new Date() } }
+        });
+
+        const notifyData = {
+          rideId: String(ride._id),
+          paymentId: payload.paymentId,
+          method: 'cash',
+          status: 'paid',
+          timestamp: new Date().toISOString(),
+        };
+        if (ride.captain?.socketId) sendMessageToSocketId(ride.captain.socketId, { event: 'payment-status-changed', data: notifyData });
+        if (ride.user?.socketId) sendMessageToSocketId(ride.user.socketId, { event: 'payment-status-changed', data: notifyData });
+      } catch (err) {
+        console.error('payment-acknowledged handler error:', err);
       }
     });
 

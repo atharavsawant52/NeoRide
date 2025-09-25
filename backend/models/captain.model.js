@@ -19,6 +19,15 @@ const captainSchema = new mongoose.Schema({
         required: true,
         default: "https://ik.imagekit.io/x5nufbqb6/user-profile-icon-free-vector_SU_b03V_O.jpg?updatedAt=1720705229085"
     },
+    // Optional KYC documents
+    driverLicenseUrl: {
+        type: String,
+        default: null
+    },
+    aadharUrl: {
+        type: String,
+        default: null
+    },
     email: {
         type: String,
         required: true,
@@ -45,8 +54,9 @@ const captainSchema = new mongoose.Schema({
     vehicle: {
         color: { type: String, required: true, minlength: 3 },
         plate: { type: String, required: true, minlength: 3 },
+        name: { type: String, required: false, minlength: 2 },
         capacity: { type: Number, required: true, min: 1 },
-        vehicleType: { type: String, required: true, enum: ['car', 'motorcycle', 'auto'] }
+        vehicleType: { type: String, required: true, enum: ['car', 'motorcycle', 'auto', 'taxi', 'carxl'] }
     },
     location: {
         ltd: { type: Number },

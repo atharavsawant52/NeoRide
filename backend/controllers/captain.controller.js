@@ -21,16 +21,38 @@ module.exports.registerCaptain = async (req, res, next) => {
     }
 
     let profilePic = undefined
+    let driverLicenseUrl = undefined
+    let aadharUrl = undefined
 
-    if (req.file) {
+    // Handle multiple uploads if provided
+    const files = req.files || {};
+    if (files.profilePic && files.profilePic[0]) {
         const uploadedImage = await imagekit.upload({
-            file: req.file.buffer,
-            fileName: req.file.originalname,
+            file: files.profilePic[0].buffer,
+            fileName: files.profilePic[0].originalname,
         });
         profilePic = uploadedImage.url
     }
+    if (files.driverLicense && files.driverLicense[0]) {
+        const uploadedDL = await imagekit.upload({
+            file: files.driverLicense[0].buffer,
+            fileName: files.driverLicense[0].originalname,
+        });
+        driverLicenseUrl = uploadedDL.url
+    }
+    if (files.aadhar && files.aadhar[0]) {
+        const uploadedAad = await imagekit.upload({
+            file: files.aadhar[0].buffer,
+            fileName: files.aadhar[0].originalname,
+        });
+        aadharUrl = uploadedAad.url
+    }
 
     const hashedPassword = await captainModel.hashPassword(password);
+
+    // Auto capacity map
+    const capacityMap = { motorcycle: 1, car: 4, carxl: 6, auto: 3, taxi: 3 };
+    const resolvedCapacity = (vehicle && vehicle.capacity) ? Number(vehicle.capacity) : capacityMap[vehicle?.vehicleType] || 1;
 
     const captain = await captainService.createCaptain({
         firstname: fullname.firstname,
@@ -39,9 +61,12 @@ module.exports.registerCaptain = async (req, res, next) => {
         password: hashedPassword,
         color: vehicle.color,
         plate: vehicle.plate,
-        capacity: vehicle.capacity,
+        name: vehicle.name,
+        capacity: resolvedCapacity,
         vehicleType: vehicle.vehicleType,
-        profilePic
+        profilePic,
+        driverLicenseUrl,
+        aadharUrl
     });
 
     const token = captain.generateAuthToken();
@@ -107,16 +132,38 @@ module.exports.updateCaptainProfile = async (req, res, next) => {
         if (vehicle && typeof vehicle === 'object') {
             if (vehicle.color) update['vehicle.color'] = vehicle.color;
             if (vehicle.plate) update['vehicle.plate'] = vehicle.plate;
-            if (vehicle.capacity != null) update['vehicle.capacity'] = Number(vehicle.capacity);
+            if (vehicle.name) update['vehicle.name'] = vehicle.name;
+            if (vehicle.capacity != null) {
+                update['vehicle.capacity'] = Number(vehicle.capacity);
+            } else if (vehicle.vehicleType) {
+                const capacityMap = { motorcycle: 1, car: 4, carxl: 6, auto: 3, taxi: 3 };
+                update['vehicle.capacity'] = capacityMap[vehicle.vehicleType] || 1;
+            }
             if (vehicle.vehicleType) update['vehicle.vehicleType'] = vehicle.vehicleType;
         }
 
-        if (req.file) {
+        // handle multiple possible uploads
+        const files = req.files || {};
+        if (files.profilePic && files.profilePic[0]) {
             const uploadedImage = await imagekit.upload({
-                file: req.file.buffer,
-                fileName: req.file.originalname,
+                file: files.profilePic[0].buffer,
+                fileName: files.profilePic[0].originalname,
             });
             update.profilePic = uploadedImage.url;
+        }
+        if (files.driverLicense && files.driverLicense[0]) {
+            const uploadedDL = await imagekit.upload({
+                file: files.driverLicense[0].buffer,
+                fileName: files.driverLicense[0].originalname,
+            });
+            update.driverLicenseUrl = uploadedDL.url;
+        }
+        if (files.aadhar && files.aadhar[0]) {
+            const uploadedAad = await imagekit.upload({
+                file: files.aadhar[0].buffer,
+                fileName: files.aadhar[0].originalname,
+            });
+            update.aadharUrl = uploadedAad.url;
         }
 
         const updated = await captainModel.findByIdAndUpdate(req.captain._id, update, { new: true });

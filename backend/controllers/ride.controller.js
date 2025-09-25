@@ -12,7 +12,6 @@ module.exports.createRide = async (req, res) => {
     if (!errors.isEmpty()) {
         return res.status(400).json({ errors: errors.array() });
     }
-
     const { pickup, destination, vehicleType } = req.body;
 
     try {
@@ -72,6 +71,59 @@ module.exports.createRide = async (req, res) => {
         return res.status(500).json({ message: err.message });
     }
 };
+
+// ---------------------- ACK PAYMENT (CASH) ----------------------
+module.exports.ackPayment = async (req, res) => {
+    try {
+        const { rideId, paymentId } = req.body || {};
+        if (!rideId) return res.status(400).json({ message: 'rideId is required' });
+
+        const ride = await rideModel.findById(rideId).populate('user', 'socketId').populate('captain', 'socketId');
+        if (!ride) return res.status(404).json({ message: 'Ride not found' });
+
+        await rideModel.findByIdAndUpdate(rideId, {
+            paymentStatus: 'paid',
+            paymentMethod: 'cash',
+            paymentConfirmedAt: new Date(),
+            ...(paymentId ? { paymentID: paymentId } : {}),
+            $push: { paymentEvents: { type: 'cash_acknowledged', method: 'cash', paymentId, actor: 'captain', at: new Date() } }
+        });
+
+        const notifyData = {
+            rideId: String(ride._id),
+            paymentId: paymentId,
+            method: 'cash',
+            status: 'paid',
+            timestamp: new Date().toISOString(),
+        };
+
+        if (ride?.captain?.socketId) sendMessageToSocketId(ride.captain.socketId, { event: 'payment-status-changed', data: notifyData });
+        if (ride?.user?.socketId) sendMessageToSocketId(ride.user.socketId, { event: 'payment-status-changed', data: notifyData });
+
+        return res.status(200).json({ success: true });
+    } catch (err) {
+        console.error('ackPayment error:', err);
+        return res.status(500).json({ message: err.message });
+    }
+}
+
+// ---------------------- GET RIDE BY ID (CAPTAIN) ----------------------
+module.exports.getRideByIdCaptain = async (req, res) => {
+    try {
+        const rideId = req.params.id;
+        if (!rideId) return res.status(400).json({ message: 'Ride id required' });
+
+        const ride = await rideModel.findOne({ _id: rideId, captain: req.captain._id })
+            .populate('user', 'fullname email socketId profilePic')
+            .populate('captain', 'fullname vehicle socketId email stats');
+        if (!ride) return res.status(404).json({ message: 'Ride not found' });
+
+        return res.status(200).json(ride);
+    } catch (err) {
+        console.error('getRideByIdCaptain error:', err);
+        return res.status(500).json({ message: err.message || 'Server error' });
+    }
+}
 
 // ---------------------- USER HISTORY ----------------------
 module.exports.getUserHistory = async (req, res) => {
@@ -284,6 +336,10 @@ module.exports.endRide = async (req, res) => {
         return res.status(200).json(populatedRide);
     } catch (err) {
         console.error('endRide error:', err);
-        return res.status(500).json({ message: err.message });
+        const msg = err?.message || '';
+        if (['Ride not found', 'Ride not ongoing', 'Payment is not completed yet'].includes(msg)) {
+            return res.status(400).json({ message: msg });
+        }
+        return res.status(500).json({ message: msg || 'Server error' });
     }
 };

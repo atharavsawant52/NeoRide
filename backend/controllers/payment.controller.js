@@ -1,5 +1,6 @@
 // Backend/controllers/payment.controller.js
 const rideModel = require('../models/ride.model');
+const { sendMessageToSocketId } = require('../socket');
 
 module.exports.dummyPayment = async (req, res) => {
   try {
@@ -15,12 +16,15 @@ module.exports.dummyPayment = async (req, res) => {
     // create a dummy payment id
     const paymentId = 'DUMMY_' + Date.now();
 
-    // update ride with payment info
+    // update ride with payment info and mark paid
     const ride = await rideModel.findByIdAndUpdate(
       rideId,
       {
         paymentID: paymentId,
-        paymentMethod: method ?? 'cash'
+        paymentMethod: method ?? 'online',
+        paymentStatus: 'paid',
+        paymentConfirmedAt: new Date(),
+        $push: { paymentEvents: { type: 'payment_success', method: method ?? 'online', paymentId, amount, actor: 'user', at: new Date() } }
       },
       { new: true }
     ).populate('user', 'fullname email socketId').populate('captain', 'fullname vehicle socketId email');
@@ -28,6 +32,20 @@ module.exports.dummyPayment = async (req, res) => {
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Ride not found' });
     }
+
+    // emit real-time update
+    try {
+      const notifyData = {
+        rideId: String(ride._id),
+        paymentId,
+        amount,
+        method: method ?? 'online',
+        status: 'paid',
+        timestamp: new Date().toISOString(),
+      };
+      if (ride?.captain?.socketId) sendMessageToSocketId(ride.captain.socketId, { event: 'payment-status-changed', data: notifyData });
+      if (ride?.user?.socketId) sendMessageToSocketId(ride.user.socketId, { event: 'payment-status-changed', data: notifyData });
+    } catch {}
 
     return res.status(200).json({
       success: true,

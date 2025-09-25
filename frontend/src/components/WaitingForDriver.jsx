@@ -22,7 +22,7 @@ const WaitingForDriver = (props) => {
     : String(fullnameObj || 'Captain');
 
   const vehiclePlate = captain?.vehicle?.plate ?? captain?.vehiclePlate ?? 'N/A';
-  const vehicleModel = captain?.vehicle?.model ?? 'Vehicle';
+  const vehicleModel = captain?.vehicle?.name ?? captain?.vehicle?.model ?? 'Vehicle';
   const otp = localOtp;
   const fareVal = (() => {
     if (!ride?.fare) return '—';
@@ -45,7 +45,7 @@ const WaitingForDriver = (props) => {
       <div className='flex items-center justify-between gap-4 mt-8'>
         <img
           className='h-16 w-16 rounded-md object-cover'
-          src={captain?.avatar ?? captain?.photoUrl ?? 'https://swyft.pl/wp-content/uploads/2023/05/how-many-people-can-a-uberx-take.jpg'}
+          src={captain?.profilePic ?? captain?.avatar ?? captain?.photoUrl ?? 'https://swyft.pl/wp-content/uploads/2023/05/how-many-people-can-a-uberx-take.jpg'}
           alt={captainName}
         />
         <div className='flex-1 text-left'>

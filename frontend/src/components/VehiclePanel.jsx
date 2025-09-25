@@ -43,6 +43,30 @@ const VehiclePanel = (props) => {
                 </div>
                 <h2 className='text-lg font-semibold'>₹{props.fare.auto}</h2>
             </div>
+            <div onClick={() => {
+                props.setConfirmRidePanel(true)
+                props.selectVehicle('taxi')
+            }} className='flex border-2 active:border-black mb-2 rounded-xl w-full p-3  items-center justify-between'>
+                <img className='h-10' src="https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Taxi_v1.png" alt="Taxi" />
+                <div className='ml-2 w-1/2'>
+                    <h4 className='font-medium text-base'>Taxi <span><i className="ri-user-3-fill"></i>3</span></h4>
+                    <h5 className='font-medium text-sm'>4 mins away </h5>
+                    <p className='font-normal text-xs text-gray-600'>Standard taxi rides</p>
+                </div>
+                <h2 className='text-lg font-semibold'>₹{props.fare.taxi}</h2>
+            </div>
+            <div onClick={() => {
+                props.setConfirmRidePanel(true)
+                props.selectVehicle('carxl')
+            }} className='flex border-2 active:border-black mb-2 rounded-xl w-full p-3  items-center justify-between'>
+                <img className='h-10' src="https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/UberXL_Premium.png" alt="UberXL" />
+                <div className='ml-2 w-1/2'>
+                    <h4 className='font-medium text-base'>UberXL <span><i className="ri-user-3-fill"></i>6</span></h4>
+                    <h5 className='font-medium text-sm'>5 mins away </h5>
+                    <p className='font-normal text-xs text-gray-600'>Spacious rides for groups</p>
+                </div>
+                <h2 className='text-lg font-semibold'>₹{props.fare.carxl}</h2>
+            </div>
         </div>
     )
 }

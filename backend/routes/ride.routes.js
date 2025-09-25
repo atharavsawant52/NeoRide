@@ -9,7 +9,7 @@ router.post('/create',
     authMiddleware.authUser,
     body('pickup').isString().isLength({ min: 3 }).withMessage('Invalid pickup address'),
     body('destination').isString().isLength({ min: 3 }).withMessage('Invalid destination address'),
-    body('vehicleType').isString().isIn([ 'auto', 'car', 'motorcycle' ]).withMessage('Invalid vehicle type'),
+    body('vehicleType').isString().isIn([ 'auto', 'car', 'motorcycle', 'taxi', 'carxl' ]).withMessage('Invalid vehicle type'),
     rideController.createRide
 )
 
@@ -39,6 +39,15 @@ router.post('/end-ride',
     rideController.endRide
 )
 
+// captain acknowledges receiving cash for a ride
+router.post('/ack-payment',
+    authMiddleware.authCaptain,
+    body('rideId').isMongoId().withMessage('Invalid ride id'),
+    rideController.ackPayment
+)
+
+// (moved to bottom) generic get by id
+
 // user submits rating for a completed ride
 router.post('/rate',
     authMiddleware.authUser,
@@ -57,6 +66,13 @@ router.get('/user/history',
 router.get('/captain/history',
     authMiddleware.authCaptain,
     rideController.getCaptainHistory
+)
+
+
+// get a specific ride by id (captain scope) - placed at bottom
+router.get('/:id',
+    authMiddleware.authCaptain,
+    rideController.getRideByIdCaptain
 )
 
 
