@@ -37,6 +37,14 @@ const userSchema = new mongoose.Schema({
     phone: {
         type: String,
     },
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false
+    },
+    twoFactor: {
+        otpHash: { type: String, select: false, default: null },
+        otpExpiresAt: { type: Date, select: false, default: null }
+    }
 })
 
 userSchema.methods.generateAuthToken = function () {

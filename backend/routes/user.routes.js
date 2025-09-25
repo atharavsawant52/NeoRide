@@ -30,6 +30,11 @@ router.patch('/profile', authMiddleware.authUser, upload.single('profilePic'), [
 
 router.get('/logout', authMiddleware.authUser, userController.logoutUser)
 
+// Toggle 2FA for the authenticated user
+router.post('/2fa/toggle', authMiddleware.authUser, userController.toggleTwoFactor)
 
+
+// Verify OTP during login (no auth required)
+router.post('/2fa/verify', userController.verifyLoginOtp)
 
 module.exports = router;

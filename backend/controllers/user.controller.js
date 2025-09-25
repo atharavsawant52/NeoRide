@@ -2,6 +2,8 @@ const userModel = require('../models/user.model');
 const userService = require('../services/user.service');
 const { validationResult } = require('express-validator');
 const blackListTokenModel = require('../models/blackListToken.model');
+const { sendMail } = require('../utils/mailer');
+const crypto = require('crypto');
 
 const imagekit = require('../config/imagekit');
 
@@ -68,10 +70,34 @@ module.exports.loginUser = async (req, res, next) => {
         return res.status(401).json({ message: 'Invalid email or password' });
     }
 
+    // If 2FA is enabled, send OTP and return twoFactorRequired
+    if (user.twoFactorEnabled) {
+        const otp = String(crypto.randomInt(100000, 1000000)); // 6-digit
+        const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+        const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        await userModel.findByIdAndUpdate(user._id, {
+            'twoFactor.otpHash': otpHash,
+            'twoFactor.otpExpiresAt': expires
+        });
+
+        try {
+            await sendMail({
+                to: user.email,
+                subject: 'Your Login OTP',
+                text: `Your OTP is ${otp}. It expires in 10 minutes.`,
+                html: `<p>Your OTP is <b>${otp}</b>. It expires in 10 minutes.</p>`
+            });
+        } catch (e) {
+            console.error('sendMail error:', e);
+            return res.status(500).json({ message: 'Failed to send OTP. Try again later.' });
+        }
+
+        return res.status(200).json({ twoFactorRequired: true, userId: String(user._id) });
+    }
+
     const token = user.generateAuthToken();
-
     res.cookie('token', token);
-
     res.status(200).json({ token, user });
 }
 
@@ -112,10 +138,60 @@ module.exports.updateUserProfile = async (req, res, next) => {
 
 module.exports.logoutUser = async (req, res, next) => {
     res.clearCookie('token');
-    const token = req.cookies.token || req.headers.authorization.split(' ')[ 1 ];
-
-    await blackListTokenModel.create({ token });
+    const token = req.cookies.token || req.headers.authorization?.split(' ')[ 1 ];
+    if (token) {
+        await blackListTokenModel.create({ token });
+    }
 
     res.status(200).json({ message: 'Logged out' });
 
+}
+
+// Toggle 2FA for user
+module.exports.toggleTwoFactor = async (req, res) => {
+    try {
+        const enabled = Boolean(req.body.enabled);
+        const updated = await userModel.findByIdAndUpdate(req.user._id, {
+            twoFactorEnabled: enabled,
+            ...(enabled ? {} : { 'twoFactor.otpHash': null, 'twoFactor.otpExpiresAt': null })
+        }, { new: true });
+        return res.status(200).json({ twoFactorEnabled: updated.twoFactorEnabled });
+    } catch (err) {
+        console.error('toggleTwoFactor(user) error:', err);
+        return res.status(500).json({ message: err.message || 'Failed to toggle 2FA' });
+    }
+}
+
+// Verify OTP during login for user
+module.exports.verifyLoginOtp = async (req, res) => {
+    try {
+        const { userId, otp } = req.body || {};
+        if (!userId || !otp) return res.status(400).json({ message: 'userId and otp are required' });
+
+        const u = await userModel.findById(userId).select('+twoFactor.otpHash +twoFactor.otpExpiresAt +password');
+        if (!u) return res.status(404).json({ message: 'User not found' });
+        if (!u.twoFactorEnabled) return res.status(400).json({ message: 'Two-factor is not enabled' });
+
+        const now = new Date();
+        if (!u.twoFactor?.otpHash || !u.twoFactor?.otpExpiresAt || u.twoFactor.otpExpiresAt < now) {
+            return res.status(400).json({ message: 'OTP expired or not set' });
+        }
+
+        const providedHash = require('crypto').createHash('sha256').update(String(otp)).digest('hex');
+        if (providedHash !== u.twoFactor.otpHash) {
+            return res.status(401).json({ message: 'Invalid OTP' });
+        }
+
+        await userModel.findByIdAndUpdate(userId, {
+            'twoFactor.otpHash': null,
+            'twoFactor.otpExpiresAt': null
+        });
+
+        const token = u.generateAuthToken();
+        res.cookie('token', token);
+        return res.status(200).json({ token, user: u });
+    } catch (err) {
+        console.error('verifyLoginOtp(user) error:', err);
+        return res.status(500).json({ message: err.message || 'Server error' });
+    }
 }

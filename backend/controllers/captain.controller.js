@@ -2,6 +2,8 @@ const captainModel = require('../models/captain.model');
 const captainService = require('../services/captain.service');
 const blackListTokenModel = require('../models/blackListToken.model');
 const { validationResult } = require('express-validator');
+const { sendMail } = require('../utils/mailer');
+const crypto = require('crypto');
 
 const imagekit = require('../config/imagekit');
 
@@ -93,6 +95,32 @@ module.exports.loginCaptain = async (req, res, next) => {
 
     if (!isMatch) {
         return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // 2FA flow
+    if (captain.twoFactorEnabled) {
+        const otp = String(crypto.randomInt(100000, 1000000));
+        const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
+        const expires = new Date(Date.now() + 10 * 60 * 1000);
+
+        await captainModel.findByIdAndUpdate(captain._id, {
+            'twoFactor.otpHash': otpHash,
+            'twoFactor.otpExpiresAt': expires
+        });
+
+        try {
+            await sendMail({
+                to: captain.email,
+                subject: 'Your Captain Login OTP',
+                text: `Your OTP is ${otp}. It expires in 10 minutes.`,
+                html: `<p>Your OTP is <b>${otp}</b>. It expires in 10 minutes.</p>`
+            });
+        } catch (e) {
+            console.error('sendMail error:', e);
+            return res.status(500).json({ message: 'Failed to send OTP. Try again later.' });
+        }
+
+        return res.status(200).json({ twoFactorRequired: true, captainId: String(captain._id) });
     }
 
     const token = captain.generateAuthToken();

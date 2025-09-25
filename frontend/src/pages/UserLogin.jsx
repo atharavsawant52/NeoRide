@@ -13,6 +13,10 @@ const UserLogin = () => {
 
   const API_BASE = import.meta.env.VITE_BASE_URL || import.meta.env.VITE_API_URL || '' // fallback
 
+  const [ awaitingOtp, setAwaitingOtp ] = useState(false)
+  const [ otp, setOtp ] = useState('')
+  const [ pendingUserId, setPendingUserId ] = useState(null)
+
   const submitHandler = async (e) => {
     e.preventDefault();
 
@@ -23,6 +27,13 @@ const UserLogin = () => {
 
       if (response.status === 200) {
         const data = response.data;
+
+        // 2FA flow
+        if (data?.twoFactorRequired && data?.userId) {
+          setPendingUserId(data.userId)
+          setAwaitingOtp(true)
+          return
+        }
 
         // token might be at data.token or data?.data?.token depending on backend shape
         const token = data.token ?? data?.data?.token ?? null;
@@ -59,11 +70,31 @@ const UserLogin = () => {
     }
   }
 
+  const submitOtp = async (e) => {
+    e.preventDefault()
+    try {
+      const res = await axios.post(`${API_BASE}/users/2fa/verify`, { userId: pendingUserId, otp })
+      const data = res.data
+      const token = data.token
+      if (token) {
+        localStorage.setItem('token', token)
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      }
+      const respUser = data.user ?? data?.data?.user ?? data
+      setUser({ ...respUser, type: 'user' })
+      navigate('/home')
+    } catch (err) {
+      console.error('OTP verify error:', err?.response ?? err)
+      alert(err?.response?.data?.message || 'OTP verification failed')
+    }
+  }
+
   return (
     <div className='p-7 h-screen flex flex-col justify-between'>
       <div>
         <img className='w-16 mb-10' src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYQy-OIkA6In0fTvVwZADPmFFibjmszu2A0g&s" alt="" />
 
+        {!awaitingOtp ? (
         <form onSubmit={submitHandler}>
           <h3 className='text-lg font-medium mb-2'>What's your email</h3>
           <input
@@ -94,6 +125,20 @@ const UserLogin = () => {
           </button>
 
         </form>
+        ) : (
+        <form onSubmit={submitOtp}>
+          <h3 className='text-lg font-medium mb-2'>Enter OTP</h3>
+          <input
+            required
+            value={otp}
+            onChange={(e) => setOtp(e.target.value)}
+            className='bg-[#eeeeee] mb-7 rounded-lg px-4 py-2 border w-full text-lg placeholder:text-base'
+            type="text"
+            placeholder='6-digit OTP'
+          />
+          <button type='submit' className='bg-[#111] text-white font-semibold mb-3 rounded-lg px-4 py-2 w-full text-lg'>Verify OTP</button>
+        </form>
+        )}
         <p className='text-center'>New here? <Link to='/signup' className='text-blue-600'>Create new Account</Link></p>
       </div>
       <div>

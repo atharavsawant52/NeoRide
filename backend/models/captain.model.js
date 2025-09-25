@@ -69,6 +69,15 @@ const captainSchema = new mongoose.Schema({
         ridesCount: { type: Number, default: 0 },
         hoursWorked: { type: Number, default: 0 },
         rating: { type: Number, default: null }
+    },
+    // Two-factor auth settings
+    twoFactorEnabled: {
+        type: Boolean,
+        default: false
+    },
+    twoFactor: {
+        otpHash: { type: String, select: false, default: null },
+        otpExpiresAt: { type: Date, select: false, default: null }
     }
 
 })

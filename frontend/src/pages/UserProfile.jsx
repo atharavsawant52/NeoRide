@@ -14,6 +14,7 @@ const UserProfile = () => {
     profilePic: null,
   })
   const [saving, setSaving] = useState(false)
+  const [twoFA, setTwoFA] = useState(Boolean(user?.twoFactorEnabled))
 
   const API_BASE = (import.meta.env.VITE_API_URL ?? import.meta.env.VITE_BACKEND_URL ?? import.meta.env.VITE_BASE_URL ?? '').replace(/\/$/, '')
 
@@ -23,6 +24,23 @@ const UserProfile = () => {
       setForm((f) => ({ ...f, profilePic: files?.[0] || null }))
     } else {
       setForm((f) => ({ ...f, [name]: value }))
+    }
+  }
+
+  const toggle2FA = async () => {
+    try {
+      const res = await axios.post(
+        `${API_BASE}/users/2fa/toggle`,
+        { enabled: !twoFA },
+        { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } }
+      )
+      const enabled = Boolean(res?.data?.twoFactorEnabled)
+      setTwoFA(enabled)
+      // reflect in context
+      setUser({ ...(user || {}), twoFactorEnabled: enabled })
+    } catch (err) {
+      console.error('toggle 2FA (user) error:', err?.response ?? err)
+      alert(err?.response?.data?.message || 'Failed to toggle 2FA')
     }
   }
 
@@ -64,6 +82,15 @@ const UserProfile = () => {
 
       <div className='pt-24 p-6 max-w-md mx-auto'>
         <h2 className='text-2xl font-semibold mb-4'>Edit Profile</h2>
+        <div className='flex items-center justify-between p-3 mb-4 border rounded'>
+          <div>
+            <h4 className='font-medium'>Two-Step Authentication</h4>
+            <p className='text-xs text-gray-600'>When turned on, we will email an OTP on each login.</p>
+          </div>
+          <button type='button' onClick={toggle2FA} className={`px-3 py-1 rounded ${twoFA ? 'bg-green-600 text-white' : 'bg-gray-200'}`}>
+            {twoFA ? 'On' : 'Off'}
+          </button>
+        </div>
         <form onSubmit={onSubmit} className='space-y-4'>
           <div className='grid grid-cols-2 gap-3'>
             <div>
