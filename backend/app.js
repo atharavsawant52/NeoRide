@@ -10,11 +10,16 @@ const captainRoutes = require('./routes/captain.routes');
 const mapsRoutes = require('./routes/maps.routes');
 const rideRoutes = require('./routes/ride.routes');
 const paymentRoutes = require('./routes/payment.routes');
+const paymentController = require('./controllers/payment.controller');
 
 
 connectToDb();
 
 app.use(cors());
+
+// Razorpay webhook must be parsed as raw buffer for signature verification
+app.post('/api/payment/webhook', express.raw({ type: 'application/json' }), paymentController.webhook);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
