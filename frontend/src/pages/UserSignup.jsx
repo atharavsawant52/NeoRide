@@ -91,7 +91,7 @@ const UserSignup = () => {
         <div>
           <img
             className="w-16 mb-10"
-            src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYQy-OIkA6In0fTvVwZADPmFFibjmszu2A0g&s"
+            src="https://ik.imagekit.io/v88ozoebq/NeoRide/logo.png?updatedAt=1759382071512"
             alt="logo"
           />
 

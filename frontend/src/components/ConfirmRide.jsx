@@ -89,9 +89,9 @@ const ConfirmRide = (props) => {
               : props.vehicleType === 'auto'
               ? 'https://www.uber-assets.com/image/upload/f_auto,q_auto:eco,c_fill,h_368,w_552/v1648431773/assets/1d/db8c56-0204-4ce4-81ce-56a11a07fe98/original/Uber_Auto_558x372_pixels_Desktop.png'
               : props.vehicleType === 'taxi'
-              ? 'https://images.unsplash.com/photo-1502877338535-766e1452684a?q=80&w=400&auto=format&fit=crop'
+              ? 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/v1.1/Taxi_v1.png'
               : props.vehicleType === 'carxl'
-              ? 'https://images.unsplash.com/photo-1517940310602-26535839fe54?q=80&w=400&auto=format&fit=crop'
+              ? 'https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/UberXL_Premium.png'
               : 'https://swyft.pl/wp-content/uploads/2023/05/how-many-people-can-a-uberx-take.jpg' // Default to car if vehicleType is unknown
           }
           alt="vehicle"

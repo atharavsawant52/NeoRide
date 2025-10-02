@@ -92,7 +92,7 @@ const UserLogin = () => {
   return (
     <div className='p-7 h-screen flex flex-col justify-between'>
       <div>
-        <img className='w-16 mb-10' src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQYQy-OIkA6In0fTvVwZADPmFFibjmszu2A0g&s" alt="" />
+        <img className='w-16 mb-10' src="https://ik.imagekit.io/v88ozoebq/NeoRide/logo.png?updatedAt=1759382071512" alt="" />
 
         {!awaitingOtp ? (
         <form onSubmit={submitHandler}>

@@ -13,7 +13,7 @@ const VehiclePanel = (props) => {
             }} className='flex border-2 active:border-black  mb-2 rounded-xl w-full p-3  items-center justify-between'>
                 <img className='h-10' src="https://swyft.pl/wp-content/uploads/2023/05/how-many-people-can-a-uberx-take.jpg" alt="" />
                 <div className='ml-2 w-1/2'>
-                    <h4 className='font-medium text-base'>UberGo <span><i className="ri-user-3-fill"></i>4</span></h4>
+                    <h4 className='font-medium text-base'>NeoGo <span><i className="ri-user-3-fill"></i>4</span></h4>
                     <h5 className='font-medium text-sm'>2 mins away </h5>
                     <p className='font-normal text-xs text-gray-600'>Affordable, compact rides</p>
                 </div>
@@ -37,7 +37,7 @@ const VehiclePanel = (props) => {
             }} className='flex border-2 active:border-black mb-2 rounded-xl w-full p-3  items-center justify-between'>
                 <img className='h-10' src="https://www.uber-assets.com/image/upload/f_auto,q_auto:eco,c_fill,h_368,w_552/v1648431773/assets/1d/db8c56-0204-4ce4-81ce-56a11a07fe98/original/Uber_Auto_558x372_pixels_Desktop.png" alt="" />
                 <div className='ml-2 w-1/2'>
-                    <h4 className='font-medium text-base'>UberAuto <span><i className="ri-user-3-fill"></i>3</span></h4>
+                    <h4 className='font-medium text-base'>NeoAuto <span><i className="ri-user-3-fill"></i>3</span></h4>
                     <h5 className='font-medium text-sm'>3 mins away </h5>
                     <p className='font-normal text-xs text-gray-600'>Affordable Auto rides</p>
                 </div>
@@ -59,9 +59,9 @@ const VehiclePanel = (props) => {
                 props.setConfirmRidePanel(true)
                 props.selectVehicle('carxl')
             }} className='flex border-2 active:border-black mb-2 rounded-xl w-full p-3  items-center justify-between'>
-                <img className='h-10' src="https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/UberXL_Premium.png" alt="UberXL" />
+                <img className='h-10' src="https://d1a3f4spazzrp4.cloudfront.net/car-types/haloProductImages/UberXL_Premium.png" alt="NeoXL" />
                 <div className='ml-2 w-1/2'>
-                    <h4 className='font-medium text-base'>UberXL <span><i className="ri-user-3-fill"></i>6</span></h4>
+                    <h4 className='font-medium text-base'>NeoXL <span><i className="ri-user-3-fill"></i>6</span></h4>
                     <h5 className='font-medium text-sm'>5 mins away </h5>
                     <p className='font-normal text-xs text-gray-600'>Spacious rides for groups</p>
                 </div>

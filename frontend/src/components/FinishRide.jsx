@@ -95,43 +95,55 @@ const FinishRide = (props) => {
     return () => { cancel = true }
   }, [ride?._id])
 
-  // Acknowledge payment: emit socket + optional server call
+  // Acknowledge payment: socket notify + persist on backend with retry
   const acknowledgePayment = async () => {
-    if (!paymentInfo) return
+    if (ackLoading) return
     try {
       setAckLoading(true)
-      // 1) emit socket event so server (and maybe passenger) knows captain acknowledged
+      // Emit socket event (best-effort)
       if (socket) {
-        socket.emit('payment-acknowledged', {
-          rideId: ride?._id,
-          paymentId: paymentInfo.paymentId,
-          captainSocketId: socket.id
-        })
-      }
-
-      // 2) optional: inform backend to persist ack (endpoint: POST /rides/ack-payment)
-      // If you don't have this endpoint, the try/catch will fail silently and we still proceed.
-      try {
-        const token = localStorage.getItem('token') || ''
-        await axios.post(
-          `${API_BASE.replace(/\/$/, '')}/rides/ack-payment`,
-          {
+        try {
+          socket.emit('payment-acknowledged', {
             rideId: ride?._id,
-            paymentId: paymentInfo.paymentId
-          },
-          {
-            headers: { Authorization: token ? `Bearer ${token}` : '' },
-            timeout: 8000
-          }
-        )
-      } catch (err) {
-        // it's optional; log but don't block ack UX
-        console.warn('ack persist API failed (optional):', err?.response?.data || err.message)
+            paymentId: paymentInfo?.paymentId || ride?.paymentID,
+            captainSocketId: socket.id
+          })
+        } catch {}
       }
 
+      // Call backend (idempotent) with up to 2 retries on network/5xx
+      const token = localStorage.getItem('token') || ''
+      const doCall = async () => axios.post(
+        `${API_BASE.replace(/\/$/, '')}/rides/ack-payment`,
+        { rideId: ride?._id, paymentId: paymentInfo?.paymentId || ride?.paymentID },
+        { headers: { Authorization: token ? `Bearer ${token}` : '' }, timeout: 8000 }
+      )
+
+      let attempt = 0, success = false, lastErr = null
+      while (attempt < 2 && !success) {
+        try {
+          await doCall()
+          success = true
+        } catch (e) {
+          lastErr = e
+          const status = e?.response?.status
+          // retry only on network or 5xx
+          if (!e.response || (status >= 500 && status <= 599)) {
+            await new Promise(r => setTimeout(r, 600 * (attempt + 1)))
+            attempt++
+            continue
+          }
+          break
+        }
+      }
+      if (!success && lastErr) {
+        console.warn('ack persist API failed:', lastErr?.response?.data || lastErr.message)
+      }
+
+      // Update local UI state
       setAcknowledged(true)
-      toast.success('Payment acknowledged', { autoClose: 2500 })
       setPaymentStatus('paid')
+      toast.success('Payment acknowledged', { autoClose: 2500 })
     } catch (err) {
       console.error('acknowledgePayment error', err)
       toast.error('Could not acknowledge payment', { autoClose: 3500 })
@@ -221,7 +233,7 @@ const FinishRide = (props) => {
       <h3 className='text-2xl font-semibold mb-5'>Finish this Ride</h3>
 
       {/* --- PAYMENT INFO BANNER (if any) --- */}
-      {(paymentInfo || paymentStatus === 'paid') && (
+      {(paymentStatus === 'paid' && !(paymentMethod === 'cash' && acknowledged)) && (
         <div className='mb-4 p-4 rounded-lg border border-green-200 bg-green-50'>
           <div className='flex items-start justify-between'>
             <div>

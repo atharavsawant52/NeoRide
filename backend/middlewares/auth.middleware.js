@@ -20,7 +20,10 @@ module.exports.authUser = async (req, res, next) => {
     }
 
     try {
-
+        if (!process.env.JWT_SECRET) {
+            // Configuration issue: JWT secret not set
+            return res.status(500).json({ message: 'Server configuration error: missing JWT secret' });
+        }
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await userModel.findById(decoded._id)
 
@@ -29,6 +32,12 @@ module.exports.authUser = async (req, res, next) => {
         return next();
 
     } catch (err) {
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Token expired' });
+        }
+        if (err.name === 'JsonWebTokenError') {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
         return res.status(401).json({ message: 'Unauthorized' });
     }
 }
@@ -44,12 +53,14 @@ module.exports.authCaptain = async (req, res, next) => {
     const isBlacklisted = await blackListTokenModel.findOne({ token: token });
 
 
-
     if (isBlacklisted) {
         return res.status(401).json({ message: 'Unauthorized' });
     }
 
     try {
+        if (!process.env.JWT_SECRET) {
+            return res.status(500).json({ message: 'Server configuration error: missing JWT secret' });
+        }
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const captain = await captainModel.findById(decoded._id)
         req.captain = captain;
@@ -57,7 +68,12 @@ module.exports.authCaptain = async (req, res, next) => {
         return next()
     } catch (err) {
         console.log(err);
-
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({ message: 'Token expired' });
+        }
+        if (err.name === 'JsonWebTokenError') {
+            return res.status(401).json({ message: 'Invalid token' });
+        }
         res.status(401).json({ message: 'Unauthorized' });
     }
 }

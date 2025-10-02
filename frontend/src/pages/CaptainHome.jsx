@@ -110,15 +110,26 @@ const CaptainHome = () => {
       setRidePopupPanel(false)
       if (resp?.data) {
         setRide(resp.data)
+        // Show OTP confirmation popup only when ride is accepted
+        setConfirmRidePopupPanel(resp.data?.status === 'accepted')
+      } else {
+        setConfirmRidePopupPanel(false)
       }
-      setConfirmRidePopupPanel(true)
     } catch (err) {
       console.error('confirmRide error', err?.response ?? err)
       alert('Unable to confirm ride. Check console.')
     }
   }
 
-  
+  // Keep confirm popup visibility in sync with ride status
+  useEffect(() => {
+    if (!ride) {
+      setConfirmRidePopupPanel(false)
+      return
+    }
+    const needsOtp = ride?.status === 'accepted'
+    setConfirmRidePopupPanel(needsOtp)
+  }, [ride?.status])
 
   useGSAP(function () {
     if (confirmRidePopupPanel) {
@@ -135,7 +146,7 @@ const CaptainHome = () => {
   return (
     <div className='h-screen'>
       <div className='fixed p-6 top-0 flex items-center justify-between w-screen z-40'>
-        <img className='w-16' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="" />
+        <img className='w-16' src="https://ik.imagekit.io/v88ozoebq/NeoRide/logo.png?updatedAt=1759382071512" alt="" />
         <div className='flex items-center gap-3'>
           <CaptainProfileMenu />
         </div>

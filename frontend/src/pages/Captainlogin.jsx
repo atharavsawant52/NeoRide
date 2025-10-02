@@ -83,7 +83,7 @@ const Captainlogin = () => {
   return (
     <div className='p-7 h-screen flex flex-col justify-between'>
       <div>
-        <img className='w-20 mb-3' src="https://www.svgrepo.com/show/505031/uber-driver.svg" alt="" />
+        <img className='w-20 mb-3' src="https://ik.imagekit.io/v88ozoebq/NeoRide/logo.png?updatedAt=1759382071512" alt="" />
         {!awaitingOtp ? (
         <form onSubmit={submitHandler}>
           <h3 className='text-lg font-medium mb-2'>What's your email</h3>

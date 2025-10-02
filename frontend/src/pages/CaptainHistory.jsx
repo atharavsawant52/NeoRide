@@ -47,7 +47,7 @@ const CaptainHistory = () => {
   return (
     <div className="min-h-screen bg-white">
       <div className='fixed p-6 top-0 flex items-center justify-between w-screen z-40'>
-        <img className='w-16' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="" />
+        <img className='w-16' src="https://ik.imagekit.io/v88ozoebq/NeoRide/logo.png?updatedAt=1759382071512" alt="" />
         <div className='flex items-center gap-3'>
           <Link to='/captain-home' className=' h-10 px-4 bg-black text-white flex items-center justify-center rounded-full'>Back</Link>
         </div>

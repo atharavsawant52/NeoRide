@@ -26,8 +26,7 @@ const RidePopUp = (props) => {
     // call confirmRide passed from parent (should handle API and UI)
     try {
       if (typeof props.confirmRide === 'function') props.confirmRide();
-      // setConfirmRidePopupPanel will be toggled by parent after confirm action
-      if (typeof props.setConfirmRidePopupPanel === 'function') props.setConfirmRidePopupPanel(true);
+      // Parent will toggle confirm popup based on ride.status
     } catch (err) {
       console.error('accept error', err);
     }

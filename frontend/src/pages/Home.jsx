@@ -224,7 +224,7 @@ const Home = () => {
   return (
     <div className='h-screen relative overflow-hidden'>
       <div className='absolute left-5 top-5'>
-        <img className='w-16' src="https://upload.wikimedia.org/wikipedia/commons/c/cc/Uber_logo_2018.png" alt="" />
+        <img className='w-16' src="https://ik.imagekit.io/v88ozoebq/NeoRide/logo.png?updatedAt=1759382071512" alt="" />
       </div>
       {/* Header right: Profile menu containing actions incl. Logout & History */}
       <div className="absolute right-4 top-4 z-50 flex items-center gap-2">
